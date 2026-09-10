@@ -2,26 +2,83 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>台灣 3D 地形 - Cesium 版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台灣 3D 地形探索 - Cesium</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
-    html, body, #cesiumContainer {
-      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #dfe8dc;
+    }
+    #cesiumContainer {
+      width: 100%;
+      height: 100%;
     }
     .panel {
-      position: absolute; top: 20px; left: 20px; z-index: 10;
-      background: rgba(250, 248, 239, 0.92); backdrop-filter: blur(10px);
-      padding: 18px 20px; border-radius: 18px; width: 280px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15); font-family: "Noto Sans TC", sans-serif;
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      width: 300px;
+      padding: 18px 20px 16px;
+      border-radius: 20px;
+      background: rgba(250, 248, 239, 0.93);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 35px rgba(50, 60, 45, 0.18);
+      border: 1px solid rgba(80, 90, 70, 0.15);
+      z-index: 10;
     }
-    h1 { margin: 0 0 8px; font-size: 20px; color: #26372d; }
-    .sub { font-size: 13px; color: #657064; line-height: 1.5; margin-bottom: 12px; }
+    h1 {
+      font-size: 21px;
+      margin: 0 0 6px;
+      color: #26372d;
+    }
+    .sub {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #657064;
+      margin-bottom: 14px;
+    }
     button {
-      width: 100%; padding: 9px; margin-top: 6px; border: none; border-radius: 12px;
-      background: #547b58; color: white; font-size: 14px; cursor: pointer;
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 7px;
+      background: #547b58;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: filter 0.15s;
     }
-    button:hover { filter: brightness(1.08); }
+    button:hover {
+      filter: brightness(1.08);
+    }
+    button.secondary {
+      background: #6b7f6e;
+    }
+    .hint {
+      position: absolute;
+      right: 20px;
+      bottom: 18px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(250, 248, 239, 0.85);
+      color: #566158;
+      font-size: 13px;
+      z-index: 10;
+    }
+    .credit {
+      font-size: 11px;
+      color: #879087;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -29,17 +86,36 @@
 
   <div class="panel">
     <h1>⛰️ 台灣 3D 地形</h1>
-    <div class="sub">Cesium 版本 · 真實地形 · 可旋轉縮放</div>
-    <button onclick="flyToTaiwan()">定位到台灣</button>
-    <button onclick="toggleTerrain()">切換地形高度</button>
+    <div class="sub">真實地形 · 僅限台灣範圍 · 可旋轉縮放</div>
+    
+    <button onclick="flyToTaiwan()">定位到台灣全景</button>
+    <button class="secondary" onclick="flyToYushan()">飛到玉山</button>
+    <button class="secondary" onclick="flyToTaipei()">飛到台北</button>
+    <button class="secondary" onclick="flyToKenting()">飛到墾丁</button>
+
+    <div class="credit">
+      滑鼠左鍵：旋轉　｜　滾輪：縮放<br>
+      右鍵：平移　｜　範圍已限制在台灣
+    </div>
   </div>
 
+  <div class="hint">🖱️ 拖曳旋轉　🔍 滾輪縮放　✋ 右鍵平移</div>
+
   <script>
-    // 請換成你自己的 Cesium Ion Access Token
-    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Imlud2RyR25ZUnNmMjNDeEIiLCJqdGkiOiIzOWExMmFmYi1jZGZjLTQ3NTQtODYzNy01MDQyN2Y0YWJkZjIiLCJpZCI6NDg3MTU0LCJzdWIiOiJzZWFuMjAwOTAxMjktb3BzIiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IjEiLCJpYXQiOjE3ODkwNTEwNDl9.qTlH1FhnoiFFheSfDkQ2xABUfqspFdHjIrgH5lrOgPI';
+    // ========== 請換成你的 Cesium Ion Access Token ==========
+    Cesium.Ion.defaultAccessToken = 'YOUR_ACCESS_TOKEN';
+    // ========================================================
+
+    // 台灣大致範圍（經緯度）
+    const TAIWAN_RECTANGLE = Cesium.Rectangle.fromDegrees(
+      119.3,   // 西
+      21.7,    // 南
+      122.1,   // 東
+      25.4     // 北
+    );
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
-      terrain: Cesium.Terrain.fromWorldTerrain(),   // 真實全球地形
+      terrain: Cesium.Terrain.fromWorldTerrain(),
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -47,61 +123,120 @@
       homeButton: false,
       sceneModePicker: false,
       navigationHelpButton: false,
-      fullscreenButton: false
+      fullscreenButton: false,
+      infoBox: true,
+      selectionIndicator: true
     });
 
-    // 初始定位到台灣
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(121.0, 23.7, 1200000),
+    // 限制相機只能在台灣附近活動
+    const controller = viewer.scene.screenSpaceCameraController;
+    controller.minimumZoomDistance = 800;          // 最近不能太近
+    controller.maximumZoomDistance = 1800000;      // 最遠不能拉太遠（大概全台可視）
+    controller.enableCollisionDetection = true;
+
+    // 限制平移範圍（大致鎖在台灣）
+    viewer.camera.constrainedAxis = Cesium.Cartesian3.UNIT_Z;
+
+    // 初始飛到台灣
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(121.0, 23.6, 950000),
       orientation: {
         heading: Cesium.Math.toRadians(0),
         pitch: Cesium.Math.toRadians(-45),
         roll: 0
-      },
-      duration: 0
+      }
     });
 
+    // ========== 飛航函式 ==========
     function flyToTaiwan() {
       viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(121.0, 23.7, 800000),
+        destination: Cesium.Cartesian3.fromDegrees(121.0, 23.6, 950000),
         orientation: {
           heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-40),
+          pitch: Cesium.Math.toRadians(-45),
           roll: 0
         },
-        duration: 1.5
+        duration: 1.6
       });
     }
 
-    let terrainEnabled = true;
-    function toggleTerrain() {
-      if (terrainEnabled) {
-        viewer.scene.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-      } else {
-        viewer.scene.setTerrain(Cesium.Terrain.fromWorldTerrain());
-      }
-      terrainEnabled = !terrainEnabled;
+    function flyToYushan() {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(120.9595, 23.4700, 18000),
+        orientation: {
+          heading: Cesium.Math.toRadians(30),
+          pitch: Cesium.Math.toRadians(-25),
+          roll: 0
+        },
+        duration: 2.0
+      });
     }
 
-    // 之後可以在這裡加景點標記
-    // 範例：玉山
-    viewer.entities.add({
-      name: '玉山',
-      position: Cesium.Cartesian3.fromDegrees(120.9595, 23.4700, 3952),
-      point: {
-        pixelSize: 12,
-        color: Cesium.Color.ORANGE,
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2
-      },
-      label: {
-        text: '玉山',
-        font: '14px sans-serif',
-        pixelOffset: new Cesium.Cartesian2(0, -20),
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 3,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE
+    function flyToTaipei() {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(121.5654, 25.0330, 25000),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-35),
+          roll: 0
+        },
+        duration: 1.8
+      });
+    }
+
+    function flyToKenting() {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(120.796, 21.948, 18000),
+        orientation: {
+          heading: Cesium.Math.toRadians(10),
+          pitch: Cesium.Math.toRadians(-30),
+          roll: 0
+        },
+        duration: 2.0
+      });
+    }
+
+    // ========== 加入幾個代表性文化 / 景點標記 ==========
+    const places = [
+      { name: '玉山', lon: 120.9595, lat: 23.4700, height: 3952, color: Cesium.Color.ORANGE },
+      { name: '台北101', lon: 121.5645, lat: 25.0330, height: 500, color: Cesium.Color.CYAN },
+      { name: '阿里山', lon: 120.8000, lat: 23.5080, height: 2200, color: Cesium.Color.LIME },
+      { name: '太魯閣', lon: 121.6050, lat: 24.1580, height: 800, color: Cesium.Color.YELLOW },
+      { name: '日月潭', lon: 120.9100, lat: 23.8500, height: 800, color: Cesium.Color.DODGERBLUE },
+      { name: '墾丁', lon: 120.7960, lat: 21.9480, height: 200, color: Cesium.Color.HOTPINK },
+      { name: '九份', lon: 121.8430, lat: 25.1090, height: 400, color: Cesium.Color.MEDIUMPURPLE },
+      { name: '台東池上', lon: 121.2150, lat: 23.1220, height: 300, color: Cesium.Color.GOLD }
+    ];
+
+    places.forEach(p => {
+      viewer.entities.add({
+        name: p.name,
+        position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.height),
+        point: {
+          pixelSize: 11,
+          color: p.color,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+        },
+        label: {
+          text: p.name,
+          font: '14px "Noto Sans TC", sans-serif',
+          pixelOffset: new Cesium.Cartesian2(0, -18),
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      });
+    });
+
+    // 點擊實體時顯示名稱（簡單版）
+    viewer.selectedEntityChanged.addEventListener(function(entity) {
+      if (Cesium.defined(entity) && entity.name) {
+        console.log('選中：', entity.name);
       }
     });
   </script>
