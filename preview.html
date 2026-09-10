@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小台灣 · 縣市漫遊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=LXGW+WenKai+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17302B;
+    --ink-soft:#3C544D;
+    --paper:#EDE7D6;
+    --paper-deep:#E4DCC5;
+    --strait:#1C4A55;
+    --strait-deep:#123640;
+    --jade:#4C7A5A;
+    --lantern:#DC9E3F;
+    --vermilion:#B84C3B;
+    --olive:#6E7F3E;
+    --clay:#B4703F;
+    --line: rgba(23,48,43,0.16);
+    --serif:'Noto Serif TC', serif;
+    --hand:'LXGW WenKai TC','Ma Shan Zheng',cursive;
+    --sans:'Noto Sans TC', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.28), transparent 22%),
+      radial-gradient(circle at 80% 70%, rgba(180,112,63,.07), transparent 28%),
+      repeating-linear-gradient(0deg, rgba(23,48,43,.018) 0 1px, transparent 1px 5px),
+      var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--lantern); color:var(--strait-deep);}
+  a{color:inherit;}
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+
+  header.top{
+    padding:22px 28px 0;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    max-width:1180px;
+    margin:0 auto;
+  }
+  header.top .mark{ font-family:var(--hand); font-weight:700; font-size:19px; letter-spacing:0.04em; }
+  header.top .mark span{color:var(--vermilion);}
+  header.top .sub{ font-size:12.5px; color:var(--ink-soft); }
+
+  /* ---------- hero ---------- */
+  .hero{
+    display:grid;
+    grid-template-columns: 1.05fr 0.8fr;
+    gap:44px;
+    align-items:start;
+    padding:36px 0 20px;
+  }
+  .hero h1{
+    font-family:var(--serif);
+    font-weight:900;
+    font-size:clamp(38px,5vw,62px);
+    line-height:1.1;
+    margin:0 0 20px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--strait);
+    display:block;
+    font-size:0.4em;
+    font-weight:500;
+    letter-spacing:0.3em;
+    margin-bottom:14px;
+  }
+  .hero p{ max-width:44ch; color:var(--ink-soft); font-size:16px; margin:0 0 22px; }
+  .hero .stats{ display:flex; gap:26px; flex-wrap:wrap; margin-top:10px; }
+  .hero .stats div{border-left:2px solid var(--vermilion); padding-left:12px;}
+  .hero .stats b{ display:block; font-family:var(--serif); font-size:24px; font-weight:700; }
+  .hero .stats span{font-size:12.5px; color:var(--ink-soft);}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:12px;
+    margin-top:26px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .legend i{
+    display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px;
+  }
+
+  /* ---------- map ---------- */
+  .map-col{ position:sticky; top:20px; }
+  .map-stage{
+    position:relative;
+    background: radial-gradient(120% 120% at 25% 0%, #235d69 0%, var(--strait) 45%, var(--strait-deep) 100%);
+    border-radius:22px;
+    padding:18px 18px 12px;
+    box-shadow: 0 30px 60px -30px rgba(18,54,64,0.55);
+  }
+  .map-stage svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .county-path{
+    fill-rule:evenodd;
+    stroke:var(--strait-deep);
+    stroke-width:1.1;
+    cursor:pointer;
+    transition: filter 0.12s ease, stroke-width 0.12s ease;
+  }
+  .county-path:hover, .county-path:focus{
+    filter:brightness(1.22);
+    outline:none;
+  }
+  .county-path.active{
+    stroke:#fff;
+    stroke-width:2.2;
+    filter:brightness(1.28);
+  }
+  .r-north{ fill:#2E6472; }
+  .r-central{ fill:#4C7A5A; }
+  .r-south{ fill:#B4703F; }
+  .r-east{ fill:#6E7F3E; }
+  .r-island{ fill:#C79A3B; }
+
+  .hover-caption{
+    display:none;
+    text-align:center;
+    font-family:var(--serif);
+    font-size:14px;
+    color:#F4EFDD;
+    margin-top:8px;
+    min-height:20px;
+    letter-spacing:0.04em;
+  }
+  .hover-caption b{ color:var(--lantern); font-weight:700; }
+
+  .map-tooltip{
+    position:absolute; left:0; top:0;
+    transform:translate(14px,14px);
+    padding:5px 10px;
+    background:rgba(18,54,64,.94); color:#F7F0DE;
+    border:1px solid rgba(244,239,221,.25); border-radius:8px;
+    font-family:var(--hand); font-size:13px; white-space:nowrap;
+    opacity:0; pointer-events:none; z-index:5;
+    transition:opacity .08s ease;
+    box-shadow:0 5px 14px rgba(0,0,0,.16);
+  }
+  .map-tooltip.show{opacity:1;}
+
+  .insets{
+    position:absolute;
+    left:26px; bottom:16px;
+    display:flex;
+    gap:10px;
+  }
+  .inset-box{
+    background:rgba(18,54,64,0.55);
+    border:1px solid rgba(244,239,221,0.25);
+    border-radius:10px;
+    padding:6px;
+    width:74px;
+  }
+  .inset-box svg{ width:100%; height:auto; display:block; }
+  .inset-box .lbl{
+    font-size:9.5px;
+    color:#E7DFC4;
+    text-align:center;
+    margin-top:3px;
+  }
+  .inset-path{
+    fill:#C79A3B;
+    stroke:var(--strait-deep);
+    stroke-width:1.4;
+    fill-rule:evenodd;
+    cursor:pointer;
+    transition: filter 0.12s ease;
+  }
+  .inset-path:hover{ filter:brightness(1.25); }
+  .inset-path.active{ stroke:#fff; stroke-width:2.4; }
+
+  /* ---------- region tabs + list ---------- */
+  .browse{ padding:46px 0 10px; border-top:1px solid var(--line); margin-top:40px; }
+  .browse-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    flex-wrap:wrap; gap:14px; margin-bottom:20px;
+  }
+  .browse-head h2{ font-family:var(--hand); font-size:24px; font-weight:700; margin:0; }
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tabs button{
+    font-family:var(--sans); font-size:13px; padding:7px 14px; border-radius:999px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-soft); cursor:pointer;
+  }
+  .tabs button.active{ background:var(--strait); border-color:var(--strait); color:#fff; }
+
+  .county-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr));
+    gap:12px; padding-bottom:50px;
+  }
+  .card{
+    text-align:left; background:var(--paper-deep); border:1px solid var(--line);
+    border-radius:14px; padding:14px 16px; cursor:pointer; font-family:var(--sans);
+    color:var(--ink); transition:transform 0.12s ease, border-color 0.12s ease;
+  }
+  .card:hover{ transform:translateY(-2px); border-color:var(--jade); }
+  .card .tag{ font-size:11px; color:var(--jade); margin-bottom:6px; display:block; }
+  .card .name{ font-family:var(--hand); font-weight:700; font-size:17px; display:block; margin-bottom:4px; }
+  .card .line{ font-size:12px; color:var(--ink-soft); }
+
+  footer{ border-top:1px solid var(--line); padding:22px 0 40px; font-size:12px; color:var(--ink-soft); text-align:center; }
+
+  /* ---------- detail panel ---------- */
+  .scrim{ position:fixed; inset:0; background:rgba(18,32,29,0.42); opacity:0; pointer-events:none; transition:opacity 0.25s ease; z-index:40; }
+  .scrim.open{opacity:1; pointer-events:auto;}
+  .panel{
+    position:fixed; top:0; right:0; height:100%; width:min(460px, 100%);
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.28), transparent 22%),
+      radial-gradient(circle at 80% 70%, rgba(180,112,63,.07), transparent 28%),
+      repeating-linear-gradient(0deg, rgba(23,48,43,.018) 0 1px, transparent 1px 5px),
+      var(--paper); box-shadow:-20px 0 50px -20px rgba(0,0,0,0.35);
+    transform:translateX(100%); transition:transform 0.32s cubic-bezier(.2,.8,.2,1);
+    z-index:41; overflow-y:auto;
+  }
+  .panel.open{transform:translateX(0);}
+  .panel-head{ padding:26px 26px 22px; color:#fff; position:relative; }
+  .panel-head .close{
+    position:absolute; top:18px; right:18px; width:34px; height:34px; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.4); background:rgba(0,0,0,0.15); color:#fff;
+    font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .panel-head .tag{ font-size:12px; letter-spacing:0.08em; opacity:0.85; display:block; margin-bottom:8px; }
+  .panel-head h3{ font-family:var(--hand); font-size:32px; margin:0 0 8px; }
+  .panel-head p.tagline{ margin:0; font-size:14px; opacity:0.92; max-width:34ch; }
+  .panel-body{padding:24px 26px 40px;}
+  .section{margin-bottom:26px;}
+  .section h4{ font-family:var(--serif); font-size:16px; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+  .section h4 .ic{ width:26px;height:26px; border-radius:50%; display:inline-flex;align-items:center;justify-content:center; font-size:13px; background:var(--paper-deep); }
+  .section p{ margin:0; font-size:14.5px; color:var(--ink-soft); }
+  .indigenous-intro{margin-bottom:10px !important;}
+  .indigenous-groups{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+  .indigenous-group{padding:5px 9px;border-radius:999px;background:rgba(76,122,90,.10);border:1px solid rgba(76,122,90,.18);font-size:12px;color:var(--ink);}
+  .indigenous-note{font-size:12px !important;opacity:.72;margin-top:10px !important;}
+  .township-note{font-size:12px !important; margin-bottom:10px !important; opacity:.7;}
+
+  .places-list{display:grid;gap:9px;}
+  .place-group{padding:10px 12px;background:rgba(255,252,241,.58);border:1px solid rgba(23,48,43,.10);border-radius:10px;}
+  .place-group strong{display:block;font-family:var(--hand);font-size:13px;margin-bottom:4px;}
+  .place-group span{font-size:13px;color:var(--ink-soft);line-height:1.65;}
+  .township-map-wrap{
+    position:relative; background:rgba(255,252,241,.58);
+    border:1px solid rgba(23,48,43,.16); border-radius:12px;
+    padding:10px; overflow:hidden;
+  }
+  #townshipMap{width:100%;height:310px;display:block;}
+  .township-path{
+    fill:#E4DCC5; stroke:#5D665E; stroke-width:.7px; outline:none;
+    vector-effect:non-scaling-stroke; cursor:pointer;
+    transition:fill .15s ease, stroke .15s ease, filter .15s ease;
+  }
+  .township-path:nth-child(3n){fill:#E9DFC4;}
+  .township-path:nth-child(3n+1){fill:#DDE5D8;}
+  .township-path:nth-child(3n+2){fill:#E8D8C8;}
+  .township-path:hover,.township-path.active{fill:#D6A24B;stroke:#7A6336;stroke-width:1.15px;filter:brightness(1.04);outline:none;}
+  .township-label{font-family:var(--hand);font-size:8.5px;fill:#17302B;pointer-events:none;text-anchor:middle;dominant-baseline:middle;}
+  .township-path:focus{outline:none;}
+  .inset-box{cursor:pointer;}
+  .inset-box:focus{outline:none;}
+  .inset-path:focus{outline:none;}
+  .township-map-tip{
+    position:absolute; left:0; top:0; transform:translate(-50%,-115%);
+    padding:4px 9px; background:#17302B; color:#F7F0DE; border-radius:7px;
+    font-family:var(--hand);font-size:13px;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:2;
+  }
+  .township-map-tip.show{opacity:1;}
+  .township-fallback{font-family:var(--hand);font-size:13px;color:var(--ink-soft);padding:12px;text-align:center;}
+
+  /* ---------- exploration sections ---------- */
+  .explore-section{padding:52px 0 18px;border-top:1px solid var(--line);}
+  .explore-head{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px;}
+  .explore-head h2{font-family:var(--hand);font-size:28px;margin:0;}
+  .explore-head p{margin:0;color:var(--ink-soft);font-size:13px;max-width:48ch;}
+  .explore-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+  .explore-card{background:rgba(255,252,241,.58);border:1px solid var(--line);border-radius:16px;padding:17px;min-height:145px;position:relative;overflow:hidden;}
+  .explore-card:before{content:'';position:absolute;inset:auto -25px -35px auto;width:90px;height:90px;border-radius:50%;background:rgba(220,158,63,.12);}
+  .explore-card .eyebrow{font-size:11px;color:var(--jade);letter-spacing:.08em;margin-bottom:7px;display:block;}
+  .explore-card h3{font-family:var(--hand);font-size:18px;margin:0 0 6px;}
+  .explore-card p{font-size:13px;color:var(--ink-soft);margin:0;line-height:1.7;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;}
+  .chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--paper-deep);border:1px solid var(--line);font-size:11px;color:var(--ink-soft);}
+  .wide-card{grid-column:span 2;}
+  .full-card{grid-column:1/-1;}
+  .filter-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;}
+  .filter-pills button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 12px;font:12px var(--sans);color:var(--ink-soft);cursor:pointer;}
+  .filter-pills button.active{background:var(--strait);color:#fff;border-color:var(--strait);}
+  .tribe-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  .tribe-card{background:var(--paper-deep);border:1px solid var(--line);border-radius:13px;padding:12px;cursor:pointer;text-align:left;transition:transform .12s ease,border-color .12s ease;}
+  .tribe-card:hover{transform:translateY(-2px);border-color:var(--jade);}
+  .tribe-card b{font-family:var(--hand);font-size:16px;display:block;margin-bottom:3px;}
+  .tribe-card span{font-size:11px;color:var(--ink-soft);line-height:1.55;}
+  .timeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  .timeline-item{border-left:3px solid var(--lantern);padding:8px 12px;background:rgba(255,252,241,.45);border-radius:0 10px 10px 0;}
+  .timeline-item b{font-family:var(--hand);font-size:15px;display:block;}
+  .timeline-item span{font-size:11px;color:var(--ink-soft);}
+  .data-bars{display:grid;gap:10px;}
+  .bar-row{display:grid;grid-template-columns:80px 1fr 44px;gap:9px;align-items:center;font-size:12px;}
+  .bar-track{height:9px;background:rgba(23,48,43,.09);border-radius:999px;overflow:hidden;}
+  .bar-fill{height:100%;width:var(--w);background:var(--jade);border-radius:999px;}
+  .mini-note{font-size:11px;color:var(--ink-soft);margin-top:10px;}
+  .eco-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;}
+  .eco-item{padding:13px;border-radius:13px;background:rgba(76,122,90,.08);border:1px solid rgba(76,122,90,.14);}
+  .eco-item b{display:block;font-family:var(--hand);font-size:15px;margin-bottom:3px;}
+  .eco-item span{font-size:11px;color:var(--ink-soft);}
+  .geo-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;}
+  .geo-item{padding:15px;border-radius:14px;background:rgba(28,74,85,.07);border:1px solid rgba(28,74,85,.13);}
+  .geo-item b{font-family:var(--hand);font-size:16px;display:block;margin-bottom:3px;}
+  .geo-item span{font-size:11px;color:var(--ink-soft);}
+  @media(max-width:900px){.explore-grid{grid-template-columns:repeat(2,1fr)}.tribe-grid{grid-template-columns:repeat(3,1fr)}.eco-list,.geo-strip{grid-template-columns:repeat(3,1fr)}.timeline{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.explore-grid{grid-template-columns:1fr}.wide-card,.full-card{grid-column:auto}.tribe-grid{grid-template-columns:repeat(2,1fr)}.eco-list,.geo-strip{grid-template-columns:repeat(2,1fr)}}
+  .prevnext{ display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:16px; margin-top:10px; }
+  .prevnext button{ background:none;border:none;cursor:pointer; font-family:var(--sans); font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .prevnext button:hover{color:var(--ink);}
+
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr; gap:26px;}
+    .map-col{ position:static; }
+    .panel{width:100%; top:auto; bottom:0; height:88%; transform:translateY(100%); border-radius:20px 20px 0 0;}
+    .panel.open{transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="mark">小台灣<span>·</span>縣市漫遊</div>
+  <div class="sub">TAIWAN, IN 22 PLACES</div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <h1><em>島嶼筆記 · 一縣一味</em>走一圈台灣,<br>從北到南、從山到海</h1>
+      <p>台灣不大,卻把六種氣候、十幾種族群語言、上百種小吃,都摺進同一座島。點一下地圖上的縣市,翻開它的特色文化、美食與經濟發展。</p>
+      <div class="stats">
+        <div><b>22</b><span>縣市 / 直轄市</span></div>
+        <div><b>16</b><span>原住民族群</span></div>
+        <div><b>3</b><span>座離島縣</span></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#2E6472"></i>北部</span>
+        <span><i style="background:#4C7A5A"></i>中部</span>
+        <span><i style="background:#B4703F"></i>南部</span>
+        <span><i style="background:#6E7F3E"></i>東部</span>
+        <span><i style="background:#C79A3B"></i>離島</span>
+      </div>
+    </div>
+
+    <div class="map-col">
+      <div class="map-stage">
+        <svg id="map" viewBox="0 0 640.0 868.9" role="img" aria-label="台灣地圖,依實際縣市邊界繪製,可點擊查看介紹">
+          <g id="countyPaths"></g>
+        </svg>
+        <div class="map-tooltip" id="mapTooltip"></div>
+        <div class="insets" id="insets"></div>
+      </div>
+      <div class="hover-caption" id="hoverCaption">把游標移到地圖上,或點擊查看縣市介紹</div>
+    </div>
+  </section>
+
+  <section class="browse">
+    <div class="browse-head">
+      <h2>選一個地方看看</h2>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="county-grid" id="grid"></div>
+  </section>
+
+  <section class="explore-section" id="geographySection">
+    <div class="explore-head"><div><h2>🗺️ 台灣地理探索</h2><p>從行政區之外，再看看山脈、河川、海岸與離島，讓地圖不只是一張行政區圖。</p></div></div>
+    <div class="geo-strip">
+      <div class="geo-item"><b>🏔️ 山脈</b><span>中央山脈、雪山山脈、玉山山脈</span></div>
+      <div class="geo-item"><b>🌊 河川</b><span>淡水河、高屏溪、濁水溪、曾文溪</span></div>
+      <div class="geo-item"><b>🌊 海岸</b><span>西部海岸、東部海岸、北海岸、離島海岸</span></div>
+      <div class="geo-item"><b>🏝️ 離島</b><span>澎湖、金門、馬祖，以及其他島嶼</span></div>
+      <div class="geo-item"><b>⛰️ 高山</b><span>玉山、雪山、南湖大山等高山地景</span></div>
+    </div>
+  </section>
+
+  <section class="explore-section" id="tribeSection">
+    <div class="explore-head"><div><h2>🧑‍🤝‍🧑 台灣16族</h2><p>把原住民族從縣市介紹中獨立出來，做成可以快速認識的族群索引。</p></div></div>
+    <div class="filter-pills" id="tribeFilters"><button class="active" data-filter="all">全部</button><button data-filter="north">北部／中北部</button><button data-filter="east">東部</button><button data-filter="south">南部</button></div>
+    <div class="tribe-grid" id="tribeGrid"></div>
+  </section>
+
+  <section class="explore-section" id="foodSection">
+    <div class="explore-head"><div><h2>🍜 台灣美食地圖</h2><p>用「地區＋類型」快速找地方味道，之後也可以再接到縣市地圖。</p></div></div>
+    <div class="filter-pills" id="foodFilters"><button class="active" data-filter="all">全部</button><button data-filter="north">北部</button><button data-filter="central">中部</button><button data-filter="south">南部</button><button data-filter="east">東部</button><button data-filter="island">離島</button></div>
+    <div class="explore-grid" id="foodGrid"></div>
+  </section>
+
+  <section class="explore-section" id="festivalSection">
+    <div class="explore-head"><div><h2>🏮 台灣節慶時間軸</h2><p>用月份來探索台灣的季節感，未來還可以再接即時活動資料。</p></div></div>
+    <div class="timeline">
+      <div class="timeline-item"><b>01–03月｜冬末春初</b><span>燈會、迎春活動、櫻花與春季花季</span></div>
+      <div class="timeline-item"><b>04–06月｜春夏交界</b><span>媽祖遶境、端午、梅雨季與夏季海洋活動</span></div>
+      <div class="timeline-item"><b>07–09月｜夏日</b><span>原住民族豐年祭、小米祭典、熱氣球與海島活動</span></div>
+      <div class="timeline-item"><b>10–12月｜秋冬</b><span>秋季花季、豐收活動、地方文化節與年末燈飾</span></div>
+    </div>
+  </section>
+
+  <section class="explore-section" id="industrySection">
+    <div class="explore-head"><div><h2>🏭 台灣產業地圖</h2><p>把「經濟發展」變成更直觀的產業分布，讓每個縣市都有自己的產業關鍵字。</p></div></div>
+    <div class="explore-grid">
+      <div class="explore-card"><span class="eyebrow">北部</span><h3>💻 科技與服務</h3><p>台北、新北、桃園、新竹形成高度密集的科技、製造、金融與服務產業網絡。</p><div class="chip-row"><span class="chip">半導體</span><span class="chip">金融</span><span class="chip">航空</span><span class="chip">ICT</span></div></div>
+      <div class="explore-card"><span class="eyebrow">中部</span><h3>⚙️ 精密製造</h3><p>台中、彰化、苗栗等地串聯機械、工具機、自行車與農業加工產業。</p><div class="chip-row"><span class="chip">工具機</span><span class="chip">自行車</span><span class="chip">精密機械</span><span class="chip">農業</span></div></div>
+      <div class="explore-card"><span class="eyebrow">南部</span><h3>⚓ 港口與製造</h3><p>台南、高雄、屏東具有港口、製造、農漁業與新興科技產業的多元結構。</p><div class="chip-row"><span class="chip">港灣</span><span class="chip">石化</span><span class="chip">半導體</span><span class="chip">農漁業</span></div></div>
+      <div class="explore-card wide-card"><span class="eyebrow">東部</span><h3>🌾 農業 × 生態旅遊</h3><p>宜蘭、花蓮、台東以農業、觀光、生態與地方創生為重要特色，山海環境也形成獨特的地方產業。</p><div class="chip-row"><span class="chip">稻米</span><span class="chip">水果</span><span class="chip">觀光</span><span class="chip">生態</span></div></div>
+      <div class="explore-card"><span class="eyebrow">離島</span><h3>🏝️ 海洋型經濟</h3><p>澎湖、金門、馬祖以觀光、漁業、地方物產與海島服務為重要特色。</p><div class="chip-row"><span class="chip">觀光</span><span class="chip">漁業</span><span class="chip">地方物產</span></div></div>
+    </div>
+  </section>
+
+  <section class="explore-section" id="highlightsSection">
+    <div class="explore-head"><div><h2>✨ 每個縣市的地方特色</h2><p>把文化、美食、產業、自然與遊玩濃縮成一張「縣市名片」。</p></div></div>
+    <div class="explore-grid" id="highlightGrid"></div>
+  </section>
+
+  <section class="explore-section" id="statsSection">
+    <div class="explore-head"><div><h2>📊 台灣數據小站</h2><p>先用簡單的視覺化呈現網站裡的資料，之後可以換成即時統計資料。</p></div></div>
+    <div class="explore-card full-card"><div class="data-bars">
+      <div class="bar-row"><span>北部</span><div class="bar-track"><div class="bar-fill" style="--w:82%"></div></div><b>7</b></div>
+      <div class="bar-row"><span>中部</span><div class="bar-track"><div class="bar-fill" style="--w:59%"></div></div><b>5</b></div>
+      <div class="bar-row"><span>南部</span><div class="bar-track"><div class="bar-fill" style="--w:59%"></div></div><b>5</b></div>
+      <div class="bar-row"><span>東部</span><div class="bar-track"><div class="bar-fill" style="--w:35%"></div></div><b>3</b></div>
+      <div class="bar-row"><span>離島</span><div class="bar-track"><div class="bar-fill" style="--w:24%"></div></div><b>2</b></div>
+    </div><p class="mini-note">目前以網站的22個縣市分類呈現；這是網站導覽資料，不代表人口或面積比例。</p></div>
+  </section>
+
+  <section class="explore-section" id="ecologySection">
+    <div class="explore-head"><div><h2>🌱 台灣自然生態</h2><p>從森林、海岸到高山，讓「自然」成為縣市探索的一條主線。</p></div></div>
+    <div class="eco-list">
+      <div class="eco-item"><b>🐻 台灣黑熊</b><span>中央山脈森林的重要代表性野生動物。</span></div>
+      <div class="eco-item"><b>🐆 石虎</b><span>台灣特有亞種，棲地保育與人地關係值得認識。</span></div>
+      <div class="eco-item"><b>🦋 蝴蝶</b><span>山林與溪谷孕育多樣蝴蝶生態。</span></div>
+      <div class="eco-item"><b>🌳 台灣杉</b><span>高山森林的重要樹種之一。</span></div>
+      <div class="eco-item"><b>🐋 海洋生態</b><span>東部海岸、澎湖與離島都有豐富海洋環境。</span></div>
+    </div>
+  </section>
+
+</div>
+
+<footer>臺灣縣市小誌 · 地圖依內政部行政區界簡化繪製,實際發展持續變化中</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-hidden="true">
+  <div class="panel-head" id="panelHead">
+    <button class="close" id="closeBtn" aria-label="關閉">&#10005;</button>
+    <span class="tag" id="pTag"></span>
+    <h3 id="pName"></h3>
+    <p class="tagline" id="pTagline"></p>
+  </div>
+  <div class="panel-body">
+    <div class="section">
+      <h4><span class="ic">&#127961;</span>特色文化</h4>
+      <p id="pCulture"></p>
+    </div>
+    <div class="section">
+      <h4><span class="ic">&#127858;</span>在地美食</h4>
+      <p id="pFood"></p>
+    </div>
+    <div class="section">
+      <h4><span class="ic">&#128200;</span>經濟發展</h4>
+      <p id="pEcon"></p>
+    </div>
+    <div class="section indigenous-section">
+      <h4><span class="ic">&#127760;</span>原住民族</h4>
+      <p id="pIndigenous" class="indigenous-intro"></p>
+      <div id="pIndigenousGroups" class="indigenous-groups"></div>
+      <p id="pIndigenousNote" class="indigenous-note"></p>
+    </div>
+    <div class="section places-section">
+      <h4><span class="ic">&#127966;</span>好玩去處</h4>
+      <div id="pPlaces" class="places-list"></div>
+    </div>
+    <div class="section township-section">
+      <h4><span class="ic">&#128506;</span>鄉鎮市區</h4>
+      <p class="township-note">這個縣市的行政區域</p>
+      <div class="township-map-wrap" id="townshipMapWrap">
+        <svg id="townshipMap" viewBox="0 0 360 310" aria-label="鄉鎮市區行政區地圖"></svg>
+        <div class="township-map-tip" id="townshipMapTip"></div>
+      </div>
+    </div>
+    <div class="prevnext">
+      <button id="prevBtn">&#8592; 上一個</button>
+      <button id="nextBtn">下一個 &#8594;</button>
+    </div>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+const TW_GEO = {"main": {"viewBox": "0 0 640.0 868.9", "paths": {"taitung": "M532.69,839.31 L533.89,838.87 L533.72,836.85 L531.49,837.47 L532.69,839.31 Z M508.41,667.35 L510.14,665.04 L510.71,661.86 L510.39,659.42 L506.92,660.07 L505.14,659.28 L503.76,660.08 L500.26,659.51 L500.28,661.46 L502.58,664.15 L502.10,667.11 L504.88,668.00 L506.51,669.03 L507.17,670.58 L509.81,670.73 L509.49,668.86 L508.41,667.35 Z M507.37,474.35 L506.22,474.23 L503.92,475.31 L502.30,472.90 L496.16,472.29 L495.04,474.54 L493.33,474.81 L490.26,478.09 L490.36,478.68 L488.20,483.15 L485.87,486.42 L487.53,491.51 L490.96,492.62 L490.85,493.80 L488.13,496.03 L486.34,499.01 L485.85,501.65 L483.67,502.29 L483.15,504.71 L480.89,507.16 L480.59,508.36 L480.91,514.77 L479.50,515.48 L479.23,516.62 L477.69,517.71 L476.73,519.80 L477.24,520.45 L475.23,524.15 L476.09,526.14 L473.85,527.65 L473.96,529.55 L472.31,533.40 L471.20,537.25 L468.85,537.02 L468.31,539.34 L467.31,540.38 L468.82,542.84 L468.77,545.72 L467.99,547.06 L468.50,551.40 L467.03,553.70 L464.06,553.62 L459.94,554.71 L458.64,556.04 L456.91,556.07 L455.42,555.35 L456.04,552.80 L454.36,551.16 L453.93,549.92 L452.03,548.59 L449.63,549.27 L447.91,546.69 L446.58,546.55 L443.69,545.25 L443.80,542.88 L440.81,537.90 L440.56,534.59 L439.71,533.63 L438.61,530.89 L435.58,529.35 L432.36,530.29 L431.12,531.78 L429.46,532.14 L427.48,531.44 L425.11,526.10 L424.15,525.70 L420.47,526.07 L418.28,524.94 L416.83,523.52 L414.85,523.75 L411.82,519.87 L409.74,513.92 L410.04,512.45 L408.63,509.61 L405.74,508.23 L404.95,507.25 L402.47,508.03 L401.41,508.88 L398.48,509.10 L396.41,510.42 L394.05,511.21 L392.98,512.15 L391.34,511.67 L389.59,511.93 L386.69,515.86 L384.09,518.85 L382.93,519.09 L382.19,520.75 L380.82,521.38 L379.54,520.93 L377.21,522.51 L376.28,524.87 L376.26,529.57 L375.16,530.58 L375.14,532.66 L376.46,535.08 L373.31,537.67 L372.74,538.77 L372.53,541.45 L370.92,542.01 L369.97,543.20 L368.36,543.73 L370.45,545.42 L370.95,547.32 L370.30,551.44 L371.28,553.84 L371.23,556.18 L370.42,559.02 L368.72,561.67 L368.15,563.99 L366.74,566.18 L367.94,568.31 L369.46,570.00 L369.07,572.30 L365.68,572.82 L364.92,573.52 L365.13,575.36 L364.82,578.84 L362.66,579.58 L362.85,580.96 L360.64,582.99 L360.57,584.51 L358.46,585.67 L357.99,588.14 L355.92,590.39 L356.74,592.61 L356.12,594.17 L356.12,596.66 L357.26,598.41 L358.69,602.28 L357.64,604.27 L358.67,605.23 L359.92,608.95 L360.64,609.88 L362.84,610.63 L364.65,610.62 L365.78,612.03 L365.10,614.77 L366.71,615.52 L365.73,619.22 L365.89,620.96 L365.05,623.26 L366.61,625.63 L368.55,626.58 L369.35,626.24 L371.68,626.92 L373.85,628.67 L374.39,629.77 L374.06,632.61 L374.53,635.74 L373.60,637.41 L372.14,637.98 L372.68,640.61 L372.49,645.03 L370.03,650.03 L366.81,650.37 L362.12,650.11 L360.27,652.62 L359.81,654.50 L355.77,655.31 L354.94,656.27 L353.03,656.91 L350.72,656.94 L348.74,655.90 L349.29,659.48 L348.13,661.11 L348.15,663.34 L343.94,669.92 L342.59,671.35 L340.66,675.92 L341.07,678.28 L339.06,681.30 L339.77,683.80 L339.73,685.59 L338.11,686.41 L337.64,690.64 L340.00,694.93 L340.90,700.62 L342.86,703.02 L343.10,705.41 L341.99,706.08 L341.72,707.65 L340.26,708.26 L340.99,709.98 L340.34,713.40 L341.83,713.39 L343.58,714.79 L345.95,715.62 L345.63,717.09 L347.21,719.28 L348.87,723.42 L346.72,725.47 L345.22,726.04 L343.29,725.59 L341.24,726.95 L341.71,728.13 L340.49,729.57 L341.45,730.52 L339.70,732.51 L339.80,734.05 L338.53,735.73 L340.62,737.44 L342.92,737.74 L343.03,739.39 L343.89,740.55 L345.78,740.29 L347.87,741.08 L349.61,743.70 L349.78,746.45 L350.41,748.12 L348.36,749.96 L346.31,750.13 L346.23,752.74 L348.94,753.84 L349.71,755.70 L352.39,756.07 L352.72,757.80 L350.77,757.99 L350.37,760.15 L351.14,762.72 L354.67,761.24 L357.04,762.85 L358.54,765.16 L360.08,766.04 L362.63,766.03 L364.39,766.72 L366.09,769.41 L370.08,766.78 L372.83,765.35 L371.85,757.88 L371.84,750.27 L372.52,743.77 L374.24,739.38 L375.65,737.71 L377.00,731.42 L378.62,728.14 L380.13,723.53 L381.09,722.05 L384.07,713.83 L386.95,702.22 L388.95,696.82 L390.48,691.44 L392.74,686.40 L396.02,683.78 L398.16,681.46 L398.93,673.98 L401.11,666.70 L402.39,664.26 L403.90,662.34 L405.56,661.20 L408.67,659.84 L411.04,658.09 L412.52,656.27 L414.60,654.56 L417.03,653.36 L418.75,653.03 L424.84,649.38 L431.31,642.65 L434.92,640.69 L436.46,637.24 L436.53,634.66 L438.25,631.87 L439.40,632.23 L441.01,631.10 L441.19,630.08 L440.34,627.38 L440.41,626.02 L439.36,625.06 L439.28,623.55 L437.88,621.53 L438.71,617.80 L441.44,614.99 L446.96,613.13 L447.97,613.90 L449.11,613.11 L449.90,610.33 L451.61,609.83 L454.63,604.06 L456.21,602.62 L458.66,596.90 L459.40,594.04 L460.55,592.39 L463.36,590.65 L465.83,587.47 L468.48,582.44 L468.28,580.79 L469.45,579.05 L469.65,577.19 L471.18,576.31 L472.35,571.43 L473.17,569.80 L474.27,564.13 L476.15,562.68 L475.69,561.68 L476.61,559.33 L478.44,557.15 L480.31,557.15 L482.83,555.53 L485.04,552.11 L485.99,552.91 L488.34,550.92 L486.12,548.86 L485.62,547.18 L485.69,544.72 L486.97,542.55 L487.52,540.21 L486.31,538.26 L486.67,537.49 L485.37,535.22 L484.99,533.15 L485.31,529.89 L486.96,528.61 L488.12,528.50 L490.11,525.70 L489.02,524.00 L489.98,521.09 L490.82,516.56 L491.96,515.36 L492.10,512.53 L494.44,507.59 L496.47,504.89 L497.83,504.01 L499.70,504.08 L500.64,501.94 L501.19,495.56 L502.21,491.91 L502.01,489.67 L503.39,483.86 L504.14,483.44 L504.79,479.98 L506.02,476.70 L507.37,474.35 Z M510.43,808.74 L510.23,812.11 L512.83,816.05 L513.70,816.25 L515.97,819.23 L517.16,819.72 L519.18,819.25 L521.37,820.53 L523.88,823.54 L524.09,824.99 L526.58,824.51 L527.99,825.50 L529.24,825.05 L530.88,820.64 L530.12,819.60 L527.02,818.14 L524.00,815.90 L522.65,812.38 L524.11,810.90 L523.63,807.37 L524.28,806.14 L523.60,804.81 L521.76,805.91 L521.11,805.19 L515.47,805.82 L514.15,805.45 L511.19,805.86 L509.57,804.64 L508.24,806.07 L510.43,808.74 Z", "yilan": "M612.47,130.89 L610.75,127.95 L608.90,127.66 L607.34,130.60 L609.61,131.16 L612.47,130.89 Z M569.70,258.88 L569.05,254.15 L570.84,248.72 L572.77,244.47 L573.23,238.02 L574.11,233.82 L575.83,229.62 L578.43,227.28 L580.51,224.11 L580.18,222.92 L583.03,221.27 L587.17,217.39 L586.98,214.78 L584.60,213.87 L584.24,211.35 L585.03,208.47 L588.36,207.40 L589.55,206.50 L591.31,206.44 L592.17,204.91 L592.26,202.31 L591.64,200.63 L591.22,196.22 L591.78,192.77 L590.34,192.95 L590.16,191.07 L588.68,189.69 L588.99,188.03 L590.69,187.68 L593.02,189.23 L593.77,187.71 L590.24,186.60 L588.49,184.41 L586.45,179.96 L585.37,176.68 L584.04,169.52 L583.65,161.95 L583.84,161.07 L581.41,156.29 L580.64,153.96 L579.96,150.29 L579.63,145.77 L579.90,140.53 L581.08,132.85 L582.48,127.45 L584.96,121.25 L587.37,117.64 L589.70,116.11 L590.42,114.75 L591.76,114.15 L594.60,111.26 L594.85,107.84 L596.72,105.63 L598.29,105.72 L599.25,104.11 L601.72,102.80 L604.00,98.52 L611.05,95.33 L612.89,95.15 L612.22,94.05 L607.95,93.95 L605.52,95.69 L603.15,96.26 L601.73,96.04 L600.36,97.19 L598.71,97.28 L597.43,99.09 L591.74,100.61 L589.33,99.91 L586.23,100.72 L584.94,102.18 L584.57,105.16 L586.06,106.21 L587.67,109.34 L582.69,114.31 L579.74,114.83 L577.99,114.61 L576.69,115.20 L573.84,115.53 L574.05,116.44 L571.52,118.08 L571.85,121.82 L570.07,123.64 L568.73,123.86 L566.90,126.06 L562.63,127.15 L560.04,126.45 L558.13,127.77 L556.40,129.76 L555.21,130.05 L552.37,132.59 L550.42,133.89 L550.80,135.74 L548.84,135.72 L547.99,136.54 L546.17,135.86 L544.26,137.27 L536.51,137.91 L536.54,141.10 L535.34,141.81 L532.90,141.52 L532.08,142.63 L529.29,143.11 L529.22,144.32 L530.20,146.71 L529.92,148.06 L528.61,149.63 L528.64,151.99 L529.87,152.68 L529.46,157.33 L527.84,159.56 L525.71,159.38 L525.26,161.80 L522.21,161.38 L519.61,163.09 L518.02,163.09 L516.80,164.55 L516.46,167.35 L514.81,167.49 L513.66,168.57 L510.96,168.31 L506.61,171.04 L503.79,170.90 L501.43,171.37 L499.26,171.03 L496.53,174.94 L497.39,176.49 L494.94,180.41 L493.86,183.65 L491.35,188.23 L488.55,188.83 L486.55,190.99 L488.16,194.02 L488.58,195.58 L486.73,196.57 L486.02,198.38 L484.73,199.70 L485.57,201.90 L485.14,203.71 L486.24,206.29 L485.35,207.39 L483.75,207.84 L482.16,210.98 L479.86,211.12 L479.42,213.87 L478.04,214.46 L476.27,216.82 L473.64,217.34 L471.52,221.44 L470.16,222.18 L468.80,224.01 L467.18,227.73 L469.48,229.53 L469.67,231.22 L469.18,235.53 L469.40,238.23 L470.45,238.36 L471.86,240.29 L473.06,239.59 L475.67,239.55 L477.79,240.52 L478.88,242.28 L478.32,242.95 L479.74,245.61 L481.47,245.94 L482.97,245.18 L483.45,243.90 L485.83,242.81 L487.47,243.31 L490.11,242.88 L492.31,241.93 L494.14,241.99 L495.27,244.36 L496.43,244.00 L497.31,246.42 L500.48,248.84 L505.06,250.53 L507.93,252.83 L509.28,251.91 L510.55,252.37 L513.96,252.04 L514.68,252.92 L517.16,253.64 L519.15,253.52 L521.01,254.98 L521.73,256.83 L523.85,258.02 L525.55,257.68 L528.13,258.63 L529.36,258.42 L532.31,259.25 L531.02,256.67 L532.51,253.76 L536.62,252.57 L537.89,251.54 L535.74,248.54 L535.60,246.17 L537.75,246.28 L539.13,246.98 L539.76,248.31 L541.66,250.29 L542.83,248.82 L545.11,250.41 L547.79,253.26 L549.57,252.46 L550.63,254.21 L552.67,254.08 L556.24,255.85 L559.44,256.08 L560.91,256.73 L563.20,256.83 L566.46,258.96 L569.70,258.88 Z", "taipei": "M521.59,39.55 L520.65,39.98 L517.92,44.75 L515.81,46.04 L514.06,46.26 L513.18,47.14 L512.78,49.56 L510.84,49.53 L508.94,48.56 L508.11,50.46 L506.62,51.71 L505.27,54.08 L503.96,55.04 L500.57,58.85 L500.20,60.67 L498.69,64.27 L500.71,66.10 L503.52,66.19 L505.78,67.22 L508.87,70.64 L509.87,73.58 L509.03,79.18 L505.50,82.20 L505.15,83.77 L505.78,85.31 L505.82,87.59 L506.77,88.75 L508.57,87.87 L510.63,85.69 L512.75,86.30 L515.60,89.29 L515.82,92.93 L518.12,93.88 L518.51,95.05 L520.22,95.78 L522.05,99.66 L524.69,99.79 L526.08,99.24 L527.50,99.98 L531.22,100.52 L534.58,98.97 L533.29,97.23 L530.79,96.65 L530.33,92.34 L530.86,90.76 L529.77,89.28 L530.22,87.39 L533.06,86.14 L536.02,86.76 L537.66,85.02 L541.30,85.66 L542.00,85.13 L545.14,85.29 L545.55,83.70 L542.02,84.25 L535.72,81.22 L534.44,79.22 L535.67,76.36 L534.37,75.36 L535.57,73.97 L536.19,71.32 L537.16,69.88 L536.00,67.28 L534.17,65.55 L530.19,64.19 L529.77,63.28 L531.13,60.16 L531.67,57.66 L529.80,55.85 L528.48,50.92 L526.04,50.47 L525.67,49.35 L527.05,47.67 L526.48,46.57 L527.15,44.79 L526.95,43.25 L524.67,43.26 L522.88,41.81 L521.59,39.55 Z", "yunlin": "M195.95,448.65 L196.26,447.30 L199.19,445.52 L198.62,444.51 L196.88,444.71 L194.96,447.63 L195.95,448.65 Z M201.28,450.97 L202.19,448.40 L201.56,446.73 L200.04,447.47 L200.25,450.97 L201.28,450.97 Z M193.56,453.12 L193.94,451.27 L195.76,451.63 L196.52,450.85 L193.80,448.05 L192.14,450.71 L193.56,453.12 Z M185.12,460.91 L187.24,460.49 L187.09,457.82 L190.43,455.46 L192.69,455.75 L193.06,454.57 L192.07,453.39 L190.00,452.56 L188.77,452.90 L186.01,454.68 L180.19,459.12 L175.29,462.22 L174.13,463.56 L171.76,464.98 L170.99,466.74 L172.69,468.07 L175.44,466.18 L175.12,468.40 L177.19,468.08 L176.84,465.48 L178.37,463.35 L181.82,463.92 L183.71,462.43 L185.30,463.35 L185.89,462.27 L185.12,460.91 Z M335.70,431.22 L335.64,429.35 L334.11,428.49 L332.88,426.53 L331.71,427.03 L331.97,428.56 L329.93,429.67 L326.86,428.91 L325.68,429.41 L325.09,431.25 L321.85,431.61 L320.11,431.35 L317.94,429.88 L318.33,426.95 L316.43,426.25 L314.24,428.97 L313.29,428.50 L312.87,425.24 L314.20,423.39 L314.20,421.16 L315.37,418.16 L316.87,415.99 L316.79,411.28 L315.11,406.77 L315.67,403.88 L315.25,402.22 L316.72,400.64 L318.58,399.65 L318.81,395.80 L317.10,391.19 L315.39,388.30 L313.12,387.39 L309.70,387.00 L304.71,387.08 L300.38,385.78 L297.42,385.34 L295.56,384.64 L291.72,384.57 L290.36,385.10 L286.38,384.86 L280.11,383.27 L274.50,380.94 L273.14,380.67 L268.89,377.50 L267.10,377.48 L263.78,378.42 L257.67,377.89 L254.79,377.89 L252.49,379.19 L246.43,379.42 L242.69,379.98 L240.84,379.91 L228.95,376.51 L226.05,374.52 L224.06,375.61 L224.06,374.03 L222.73,373.45 L220.85,374.72 L221.75,376.15 L218.93,379.72 L216.74,379.14 L215.24,381.08 L210.86,383.79 L212.51,385.21 L210.06,391.64 L208.57,392.47 L209.70,395.05 L213.78,394.59 L216.06,392.63 L216.17,395.48 L212.48,395.50 L212.00,395.98 L210.64,400.52 L209.76,407.49 L211.80,408.93 L208.31,413.45 L206.47,417.35 L205.54,420.18 L203.99,421.78 L203.11,428.65 L203.46,430.90 L203.26,440.46 L203.01,446.16 L205.04,449.32 L205.41,450.53 L204.33,451.85 L204.42,453.25 L207.17,454.45 L209.07,454.13 L212.17,455.89 L214.31,455.89 L215.60,455.21 L217.68,455.52 L221.74,457.29 L225.88,456.15 L227.13,454.38 L226.00,448.88 L226.54,447.50 L229.16,447.07 L230.67,449.97 L232.84,450.68 L233.64,447.81 L236.97,445.81 L236.60,443.37 L237.51,442.63 L240.49,442.95 L240.46,440.71 L241.68,440.00 L243.40,440.63 L246.31,439.19 L246.58,435.87 L251.73,435.32 L253.80,433.11 L253.94,431.95 L256.91,431.43 L258.44,428.72 L262.05,427.26 L265.21,428.28 L266.45,429.18 L270.67,427.51 L271.45,426.38 L273.56,427.42 L274.98,426.70 L279.11,425.85 L280.72,426.36 L284.70,425.22 L285.33,427.45 L287.84,431.14 L292.18,435.15 L296.61,435.61 L296.88,436.51 L299.79,436.80 L302.17,438.24 L304.05,437.36 L306.33,437.97 L310.58,437.75 L312.06,436.15 L313.23,436.30 L317.28,435.50 L317.32,438.10 L316.23,439.00 L317.75,440.61 L322.00,439.14 L323.44,441.08 L327.44,439.66 L330.89,439.96 L331.21,441.00 L332.91,441.44 L334.24,440.74 L336.74,441.10 L335.99,439.44 L336.39,437.63 L335.50,435.51 L336.10,434.53 L334.36,432.97 L335.70,431.22 Z", "taoyuan": "M459.74,62.29 L454.54,61.14 L451.78,61.61 L450.31,62.87 L443.74,64.38 L440.62,66.07 L438.63,67.82 L436.88,68.48 L434.98,69.96 L431.54,70.98 L423.02,72.71 L419.48,74.17 L416.61,75.89 L415.10,77.57 L412.77,79.27 L407.75,80.76 L402.85,86.20 L400.40,91.18 L398.45,94.14 L398.90,97.31 L396.69,101.21 L394.29,103.33 L392.97,105.84 L396.78,105.69 L397.70,104.18 L400.44,105.60 L404.77,104.23 L406.49,104.84 L408.55,106.62 L409.75,110.52 L409.36,113.76 L412.04,115.62 L414.85,115.79 L416.87,117.12 L420.58,116.05 L421.01,117.61 L420.44,118.91 L421.59,119.78 L426.04,120.50 L427.26,119.82 L428.55,120.34 L431.18,120.44 L432.27,125.50 L431.30,126.24 L430.20,129.26 L432.31,130.81 L435.66,132.17 L435.11,133.22 L437.26,133.89 L441.77,136.54 L443.13,137.66 L445.40,137.13 L445.81,140.11 L447.28,139.32 L451.16,138.26 L451.59,140.63 L454.72,142.43 L454.51,144.43 L456.87,145.32 L458.31,147.09 L461.78,147.98 L463.74,149.02 L465.12,150.95 L464.60,153.17 L463.61,154.37 L463.12,156.94 L464.60,158.08 L465.14,159.59 L463.32,165.33 L464.30,166.22 L466.33,165.08 L467.59,165.04 L470.08,166.67 L472.12,169.48 L473.29,172.00 L475.48,172.55 L475.15,177.98 L476.47,180.75 L478.14,181.43 L476.64,184.71 L477.68,188.26 L479.70,190.43 L483.07,192.28 L486.55,190.99 L488.55,188.83 L491.35,188.23 L493.86,183.65 L494.94,180.41 L497.39,176.49 L496.53,174.94 L499.26,171.03 L501.43,171.37 L503.79,170.90 L502.91,169.56 L502.27,166.91 L502.52,165.44 L497.11,163.05 L495.18,158.79 L493.57,157.14 L493.74,156.14 L492.29,152.65 L492.26,151.40 L491.10,149.32 L491.58,148.07 L494.47,146.06 L496.98,143.41 L494.54,141.20 L494.04,137.00 L492.55,136.31 L491.22,133.81 L489.68,133.76 L489.37,131.28 L486.54,129.34 L484.38,129.24 L480.00,131.82 L476.42,130.32 L475.75,129.23 L473.95,128.76 L472.44,129.35 L471.74,128.17 L476.16,126.87 L474.06,124.80 L473.73,123.29 L475.64,122.05 L473.67,120.41 L472.87,117.32 L470.92,117.55 L468.47,115.86 L468.32,114.64 L469.31,113.26 L467.37,111.50 L468.95,109.78 L471.13,109.44 L470.97,108.19 L468.63,107.84 L466.97,106.08 L469.07,104.81 L469.71,103.47 L470.08,99.12 L469.55,96.53 L472.87,95.68 L475.55,96.45 L477.69,96.02 L478.87,96.69 L481.83,94.95 L482.21,92.29 L484.53,92.63 L486.54,90.88 L485.64,89.20 L484.07,88.29 L484.31,87.20 L487.58,86.71 L487.87,85.93 L485.48,83.64 L485.92,78.52 L483.79,77.72 L482.85,75.53 L480.68,74.83 L475.75,75.06 L473.90,71.83 L473.79,70.52 L472.18,70.53 L469.02,68.34 L465.75,67.37 L464.04,67.30 L462.99,65.41 L459.55,64.05 L459.74,62.29 Z", "pingtung": "M252.20,746.91 L254.31,745.73 L256.41,743.15 L258.65,741.82 L258.95,739.92 L257.20,738.67 L254.07,739.56 L252.74,741.11 L253.23,742.40 L251.36,744.67 L250.89,746.12 L252.20,746.91 Z M266.85,708.87 L269.07,709.76 L270.13,712.25 L273.13,715.98 L277.36,718.88 L287.93,725.02 L294.77,728.68 L301.34,733.32 L304.64,736.37 L306.48,739.14 L307.69,742.16 L313.19,747.55 L315.93,751.60 L316.04,754.32 L318.06,759.97 L317.47,762.66 L317.82,763.88 L319.36,764.91 L322.10,767.87 L323.54,771.26 L325.76,775.11 L325.15,777.13 L327.26,782.04 L328.11,786.07 L328.14,788.04 L328.91,789.22 L328.34,790.44 L329.32,791.84 L329.39,793.69 L331.02,795.36 L330.95,797.29 L332.38,799.96 L332.57,802.84 L329.06,804.61 L330.27,809.30 L329.70,812.38 L328.24,812.22 L327.65,815.49 L325.91,817.65 L325.91,820.64 L327.35,824.11 L328.58,826.11 L329.83,826.83 L330.74,828.97 L331.99,830.39 L332.36,832.38 L331.65,834.09 L331.51,837.77 L331.08,840.45 L331.33,841.82 L333.11,842.13 L333.03,843.44 L334.87,845.58 L337.66,845.31 L337.73,843.77 L339.30,841.81 L338.57,839.28 L340.91,836.36 L343.66,835.74 L344.64,837.32 L346.14,837.88 L347.27,839.31 L350.42,839.54 L350.86,840.90 L354.10,841.98 L356.19,841.68 L358.58,844.46 L358.98,845.63 L361.78,847.02 L362.08,849.94 L363.31,850.89 L365.94,850.38 L364.95,848.32 L365.02,845.98 L361.21,839.82 L360.32,836.23 L361.42,831.69 L361.50,828.58 L364.96,827.65 L368.11,825.71 L368.43,822.84 L370.78,821.48 L370.81,820.03 L372.26,818.24 L373.89,817.38 L372.18,813.75 L372.23,810.32 L371.67,807.35 L371.72,804.54 L373.39,802.62 L373.67,799.77 L371.99,798.96 L370.71,795.33 L370.47,793.19 L372.31,791.83 L372.78,790.42 L371.69,789.44 L372.21,788.14 L371.76,785.48 L372.37,783.56 L371.58,777.71 L372.86,775.86 L372.29,771.93 L373.43,769.40 L372.83,765.35 L370.08,766.78 L366.09,769.41 L364.39,766.72 L362.63,766.03 L360.08,766.04 L358.54,765.16 L357.04,762.85 L354.67,761.24 L351.14,762.72 L350.37,760.15 L350.77,757.99 L352.72,757.80 L352.39,756.07 L349.71,755.70 L348.94,753.84 L346.23,752.74 L346.31,750.13 L348.36,749.96 L350.41,748.12 L349.78,746.45 L349.61,743.70 L347.87,741.08 L345.78,740.29 L343.89,740.55 L343.03,739.39 L342.92,737.74 L340.62,737.44 L338.53,735.73 L339.80,734.05 L339.70,732.51 L341.45,730.52 L340.49,729.57 L341.71,728.13 L341.24,726.95 L343.29,725.59 L345.22,726.04 L346.72,725.47 L348.87,723.42 L347.21,719.28 L345.63,717.09 L345.95,715.62 L343.58,714.79 L341.83,713.39 L340.34,713.40 L340.99,709.98 L340.26,708.26 L341.72,707.65 L341.99,706.08 L343.10,705.41 L342.86,703.02 L340.90,700.62 L340.00,694.93 L337.64,690.64 L338.11,686.41 L339.73,685.59 L339.77,683.80 L339.06,681.30 L341.07,678.28 L340.66,675.92 L342.59,671.35 L343.94,669.92 L348.15,663.34 L348.13,661.11 L349.29,659.48 L348.74,655.90 L350.72,656.94 L353.03,656.91 L354.94,656.27 L355.77,655.31 L359.81,654.50 L360.27,652.62 L362.12,650.11 L366.81,650.37 L370.03,650.03 L372.49,645.03 L372.68,640.61 L372.14,637.98 L373.60,637.41 L374.53,635.74 L374.06,632.61 L374.39,629.77 L373.85,628.67 L371.68,626.92 L369.35,626.24 L368.55,626.58 L366.61,625.63 L365.05,623.26 L365.89,620.96 L365.73,619.22 L364.67,617.21 L363.10,615.69 L361.94,617.09 L360.90,616.55 L359.54,614.05 L358.55,613.54 L356.27,613.77 L354.33,615.61 L351.45,617.29 L349.80,617.00 L349.56,619.73 L346.37,621.13 L345.42,620.47 L343.61,617.87 L342.74,615.92 L341.14,613.94 L339.92,613.73 L338.35,611.76 L336.24,611.33 L334.40,609.99 L330.07,609.89 L326.98,613.01 L326.63,613.90 L324.08,614.37 L322.65,615.96 L320.05,615.17 L319.51,613.52 L319.42,610.49 L317.23,610.90 L316.42,608.92 L310.90,611.26 L309.94,610.95 L307.54,611.90 L305.33,614.13 L300.59,618.06 L298.59,620.72 L295.84,622.82 L292.34,622.62 L289.16,621.73 L286.14,622.79 L285.01,622.05 L278.55,620.43 L276.88,622.30 L276.57,625.95 L275.83,629.70 L274.34,633.36 L273.53,637.26 L273.97,649.72 L272.92,654.79 L272.00,657.28 L271.01,658.07 L269.68,662.83 L269.39,668.90 L269.49,671.32 L268.97,673.06 L269.22,675.45 L269.97,677.10 L271.58,678.67 L272.00,682.19 L271.04,687.97 L269.67,691.59 L268.38,692.49 L266.58,698.73 L267.23,703.70 L266.85,708.87 Z", "taichung": "M311.09,227.92 L310.58,229.18 L308.14,232.64 L305.24,235.63 L304.05,237.58 L303.38,240.08 L301.59,243.17 L297.68,247.86 L296.64,252.43 L295.52,254.02 L295.50,256.64 L293.99,257.49 L294.81,258.82 L293.41,260.95 L290.21,259.03 L288.12,262.79 L286.28,264.25 L283.53,263.67 L284.47,265.80 L285.69,266.54 L283.50,271.28 L282.35,270.74 L281.80,273.41 L278.62,280.99 L277.71,281.51 L276.76,283.86 L281.32,285.53 L280.73,287.56 L284.89,289.11 L285.68,290.04 L287.77,295.25 L289.68,299.41 L289.20,301.72 L291.24,304.98 L293.06,305.60 L294.09,307.38 L300.24,309.39 L302.64,309.08 L303.72,309.89 L309.15,310.79 L309.77,315.33 L310.68,317.87 L312.05,319.07 L312.11,321.97 L311.60,323.16 L312.66,326.51 L311.77,327.77 L312.77,328.67 L314.46,328.31 L316.36,329.57 L318.86,328.40 L320.07,329.60 L323.99,332.47 L327.61,334.15 L330.23,334.64 L333.10,333.55 L335.91,333.71 L338.58,335.38 L339.10,336.27 L341.77,334.45 L344.63,333.68 L344.81,332.39 L347.41,330.09 L352.05,322.83 L352.83,320.12 L356.60,318.56 L357.79,318.41 L357.62,312.79 L358.02,310.87 L358.98,309.52 L359.38,307.26 L361.28,305.41 L363.35,305.46 L364.11,307.19 L365.94,307.63 L367.48,307.29 L369.51,311.28 L368.48,313.58 L371.73,311.95 L372.53,307.37 L374.78,307.87 L375.32,308.86 L378.09,309.59 L380.96,308.34 L385.30,304.73 L387.42,306.48 L389.65,306.45 L390.53,307.29 L393.61,306.84 L394.30,305.26 L396.02,304.58 L398.84,298.12 L400.55,296.78 L402.38,296.69 L403.58,299.31 L404.53,297.06 L406.73,296.52 L407.85,297.80 L409.44,295.81 L410.50,295.79 L412.34,294.08 L415.08,292.63 L416.56,290.91 L417.56,288.75 L419.74,287.38 L426.55,287.67 L427.85,286.81 L429.32,283.56 L432.23,283.05 L433.74,280.59 L436.92,283.83 L439.13,282.60 L440.26,281.11 L442.82,281.47 L445.24,279.69 L449.38,281.96 L450.84,281.30 L452.42,277.52 L453.69,275.91 L455.49,275.59 L456.43,277.57 L458.19,278.15 L458.80,279.44 L462.02,279.56 L463.11,278.04 L464.25,278.55 L467.03,278.39 L470.77,279.50 L473.01,281.03 L475.08,278.35 L475.13,276.08 L476.48,276.12 L478.31,274.08 L482.39,273.34 L482.54,271.06 L481.38,267.36 L483.71,264.81 L484.84,265.16 L486.51,263.04 L486.92,260.27 L490.96,260.22 L491.58,258.82 L493.53,256.80 L492.99,255.07 L494.13,251.99 L493.66,250.64 L495.08,247.86 L497.31,246.42 L496.43,244.00 L495.27,244.36 L494.14,241.99 L492.31,241.93 L490.11,242.88 L487.47,243.31 L485.83,242.81 L483.45,243.90 L482.97,245.18 L481.47,245.94 L479.74,245.61 L478.32,242.95 L478.88,242.28 L477.79,240.52 L475.67,239.55 L473.06,239.59 L471.86,240.29 L470.45,238.36 L469.40,238.23 L469.18,235.53 L469.67,231.22 L469.48,229.53 L467.18,227.73 L464.45,229.91 L456.39,231.20 L454.33,230.81 L453.72,231.78 L451.09,232.42 L450.27,234.44 L450.60,236.52 L448.63,238.59 L448.70,239.92 L447.87,241.94 L444.92,242.57 L443.35,240.61 L442.53,238.47 L440.23,238.77 L440.14,239.98 L438.65,242.47 L437.09,242.61 L434.89,244.55 L435.06,245.49 L433.73,247.55 L431.77,247.54 L429.52,248.24 L427.72,247.84 L424.10,252.20 L423.27,254.95 L421.84,255.42 L420.44,254.86 L417.20,257.62 L415.43,258.10 L414.33,256.54 L412.46,256.84 L411.61,258.64 L408.46,259.96 L407.79,262.56 L406.22,263.58 L403.78,263.02 L402.68,261.29 L400.04,259.53 L399.31,257.47 L397.16,254.63 L394.24,255.19 L392.07,253.66 L389.84,254.24 L387.10,253.79 L386.39,252.85 L383.21,252.87 L381.67,251.94 L377.33,253.95 L378.27,257.56 L378.56,261.84 L376.32,263.90 L374.67,264.34 L368.00,263.70 L364.14,265.09 L362.47,265.25 L358.67,264.72 L356.88,263.21 L355.14,260.60 L352.65,258.59 L347.60,257.94 L342.88,256.05 L339.72,253.61 L335.63,249.77 L333.96,249.05 L330.41,248.28 L327.16,245.99 L326.48,244.19 L323.69,241.85 L321.46,238.47 L319.39,236.33 L317.28,235.62 L315.98,233.81 L315.22,231.14 L313.47,229.95 L312.76,228.64 L311.09,227.92 Z", "tainan": "M318.34,525.81 L316.24,525.62 L314.09,524.70 L308.54,526.28 L305.72,524.72 L304.57,522.69 L303.30,525.94 L301.47,528.18 L298.49,526.69 L296.20,527.50 L293.22,525.02 L289.81,524.21 L288.17,522.19 L290.73,519.82 L290.51,517.67 L288.87,513.73 L288.80,510.30 L289.74,509.17 L288.95,504.45 L290.98,502.92 L292.87,500.49 L291.46,498.40 L284.90,495.95 L284.72,494.77 L286.59,493.81 L286.69,492.69 L284.90,490.42 L283.77,490.67 L281.26,489.45 L280.62,487.67 L283.72,485.81 L281.88,483.93 L279.28,485.88 L277.91,483.30 L276.03,482.65 L270.77,479.62 L266.74,481.27 L262.51,480.33 L257.21,482.00 L250.12,482.52 L248.65,483.67 L246.56,486.28 L243.87,486.85 L243.02,485.67 L241.49,486.35 L241.48,488.85 L237.42,488.87 L235.83,490.89 L235.38,492.96 L235.92,495.01 L234.02,495.65 L231.82,494.21 L230.23,496.44 L231.63,497.37 L229.23,499.72 L226.86,500.76 L225.07,500.74 L223.59,503.34 L222.38,506.53 L221.24,508.32 L218.48,509.46 L216.76,508.92 L214.72,507.28 L212.22,509.55 L211.11,508.70 L209.25,505.44 L205.03,503.79 L205.02,502.49 L201.39,500.05 L198.18,497.49 L197.58,499.26 L197.66,501.69 L197.06,503.55 L194.77,508.28 L193.65,508.60 L192.64,515.83 L191.58,520.28 L189.79,524.69 L190.27,526.19 L189.60,528.05 L190.18,529.35 L188.11,534.22 L187.21,535.59 L186.89,538.87 L185.75,542.60 L185.52,545.65 L182.84,549.75 L182.07,551.70 L180.96,552.86 L179.61,556.03 L179.43,559.96 L178.78,562.82 L179.39,563.88 L181.59,565.19 L182.84,566.54 L183.75,569.03 L185.53,570.18 L188.99,571.42 L196.57,576.35 L203.29,582.07 L206.83,586.06 L207.50,587.53 L206.58,588.75 L208.31,589.33 L210.33,593.67 L211.11,597.48 L210.65,601.70 L210.97,602.41 L213.81,600.33 L214.79,600.09 L219.83,602.73 L221.10,602.94 L222.49,601.36 L223.69,601.52 L223.82,603.72 L226.19,604.43 L228.69,606.68 L230.07,604.83 L233.20,606.45 L234.41,606.19 L234.01,604.44 L235.52,604.12 L239.64,605.17 L242.28,605.37 L243.62,606.45 L245.10,605.70 L246.29,607.91 L250.46,607.97 L252.72,605.81 L256.35,600.89 L257.54,600.25 L260.57,599.72 L263.72,601.84 L265.16,601.28 L266.41,598.09 L267.86,595.34 L268.86,591.56 L271.53,585.81 L273.38,586.04 L273.83,582.98 L275.16,582.70 L275.00,579.97 L279.06,579.94 L280.01,576.98 L284.74,573.78 L285.84,572.27 L289.18,569.23 L289.06,568.67 L292.43,565.93 L295.83,564.16 L297.06,562.34 L298.88,560.77 L300.68,558.40 L300.93,557.28 L303.67,552.84 L303.73,550.82 L306.57,545.50 L308.98,543.67 L308.86,542.75 L310.08,540.84 L310.98,540.92 L314.43,537.93 L315.32,536.08 L314.55,534.18 L316.05,531.02 L317.88,529.75 L318.96,527.45 L318.34,525.81 Z", "keelung": "M576.35,57.76 L575.27,55.15 L574.25,56.60 L569.99,53.67 L570.42,52.09 L567.07,51.31 L563.93,52.71 L561.28,52.00 L560.03,51.13 L556.83,50.41 L554.82,50.64 L555.19,48.03 L553.68,48.55 L552.98,50.00 L551.31,50.26 L550.35,51.44 L546.28,53.44 L543.82,53.73 L541.18,55.33 L538.49,55.78 L536.76,56.82 L537.37,58.20 L540.44,59.75 L541.14,63.20 L542.47,65.36 L542.11,66.87 L544.56,69.07 L547.62,70.53 L550.59,73.44 L553.04,74.49 L555.97,74.35 L558.33,76.70 L560.39,78.10 L561.62,77.60 L563.49,78.03 L566.49,76.44 L567.19,77.06 L570.18,73.86 L568.81,71.97 L567.03,71.81 L566.28,67.90 L566.64,66.37 L565.74,64.44 L566.47,63.47 L568.17,63.46 L569.57,61.60 L573.36,63.46 L575.13,63.02 L576.73,60.38 L576.35,57.76 Z", "nantou": "M473.01,281.03 L470.77,279.50 L467.03,278.39 L464.25,278.55 L463.11,278.04 L462.02,279.56 L458.80,279.44 L458.19,278.15 L456.43,277.57 L455.49,275.59 L453.69,275.91 L452.42,277.52 L450.84,281.30 L449.38,281.96 L445.24,279.69 L442.82,281.47 L440.26,281.11 L439.13,282.60 L436.92,283.83 L433.74,280.59 L432.23,283.05 L429.32,283.56 L427.85,286.81 L426.55,287.67 L419.74,287.38 L417.56,288.75 L416.56,290.91 L415.08,292.63 L412.34,294.08 L410.50,295.79 L409.44,295.81 L407.85,297.80 L406.73,296.52 L404.53,297.06 L403.58,299.31 L402.38,296.69 L400.55,296.78 L398.84,298.12 L396.02,304.58 L394.30,305.26 L393.61,306.84 L390.53,307.29 L389.65,306.45 L387.42,306.48 L385.30,304.73 L380.96,308.34 L378.09,309.59 L375.32,308.86 L374.78,307.87 L372.53,307.37 L371.73,311.95 L368.48,313.58 L369.51,311.28 L367.48,307.29 L365.94,307.63 L364.11,307.19 L363.35,305.46 L361.28,305.41 L359.38,307.26 L358.98,309.52 L358.02,310.87 L357.62,312.79 L357.79,318.41 L356.60,318.56 L352.83,320.12 L352.05,322.83 L347.41,330.09 L344.81,332.39 L344.63,333.68 L341.77,334.45 L339.10,336.27 L338.58,335.38 L335.91,333.71 L333.10,333.55 L330.23,334.64 L327.61,334.15 L323.99,332.47 L322.25,333.50 L320.11,333.87 L315.64,333.93 L314.44,336.30 L314.75,337.45 L317.52,339.49 L316.72,342.53 L316.85,344.86 L314.26,347.57 L312.88,348.27 L314.52,351.21 L312.93,353.13 L314.67,354.37 L313.41,357.83 L314.09,360.19 L313.97,362.38 L312.91,362.97 L312.11,366.91 L310.85,368.82 L311.92,370.57 L312.08,372.15 L311.09,374.00 L313.83,376.81 L314.69,376.91 L315.03,379.33 L317.99,381.83 L320.94,381.21 L323.04,379.98 L323.83,381.48 L324.29,384.48 L321.28,386.46 L315.88,388.38 L315.39,388.30 L317.10,391.19 L318.81,395.80 L318.58,399.65 L316.72,400.64 L315.25,402.22 L315.67,403.88 L315.11,406.77 L316.79,411.28 L316.87,415.99 L315.37,418.16 L314.20,421.16 L314.20,423.39 L312.87,425.24 L313.29,428.50 L314.24,428.97 L316.43,426.25 L318.33,426.95 L317.94,429.88 L320.11,431.35 L321.85,431.61 L325.09,431.25 L325.68,429.41 L326.86,428.91 L329.93,429.67 L331.97,428.56 L331.71,427.03 L332.88,426.53 L334.11,428.49 L335.64,429.35 L335.70,431.22 L341.06,430.31 L343.09,430.80 L346.65,433.47 L349.20,433.63 L350.00,434.50 L352.06,434.65 L354.31,433.62 L355.84,436.42 L356.94,437.19 L355.61,439.98 L355.85,443.06 L354.38,444.59 L353.05,448.00 L353.18,449.56 L355.28,452.63 L356.42,455.69 L356.35,458.46 L356.93,459.57 L357.31,462.48 L358.50,464.46 L360.06,465.41 L365.45,464.82 L367.70,466.09 L369.27,466.28 L370.79,464.32 L377.64,464.31 L380.73,465.54 L382.04,464.94 L384.30,466.40 L386.58,465.82 L389.17,465.51 L396.07,467.62 L397.83,467.49 L399.65,470.18 L398.43,471.60 L399.50,474.22 L402.03,473.30 L403.88,471.64 L407.66,470.41 L408.60,468.36 L406.72,466.06 L404.88,464.67 L408.11,461.35 L407.93,459.90 L410.03,458.50 L411.54,454.70 L411.48,453.83 L414.69,454.75 L416.76,454.75 L417.96,453.04 L419.37,453.72 L423.11,453.20 L424.45,454.17 L426.53,454.62 L427.23,453.21 L429.95,451.32 L429.08,450.05 L429.99,447.24 L428.92,444.96 L430.01,443.74 L431.43,443.63 L432.13,441.31 L430.19,440.18 L430.55,437.08 L434.09,437.13 L436.27,437.90 L436.45,436.30 L438.58,435.15 L439.67,433.72 L440.99,434.73 L442.49,434.85 L444.03,433.71 L444.88,430.25 L446.57,427.21 L446.38,424.38 L447.78,422.05 L448.15,419.69 L449.03,418.51 L449.07,416.73 L448.26,415.00 L449.83,412.60 L449.81,409.43 L450.21,407.13 L449.85,405.37 L448.43,402.04 L447.64,402.01 L447.47,398.43 L448.29,396.99 L445.82,396.47 L442.44,393.95 L442.03,391.65 L447.35,388.51 L446.71,385.38 L447.13,382.87 L448.73,381.92 L449.82,375.01 L451.96,372.12 L452.90,368.23 L454.04,367.12 L455.60,367.06 L455.12,365.44 L456.32,364.45 L455.72,362.64 L455.82,360.71 L454.71,359.74 L455.87,358.60 L457.83,358.50 L458.14,354.85 L457.16,351.02 L457.66,349.21 L457.83,345.81 L458.46,344.27 L457.54,342.01 L455.53,341.95 L454.82,340.51 L454.68,337.36 L456.71,334.25 L458.12,330.96 L458.16,329.94 L460.18,326.29 L459.64,322.68 L462.45,320.27 L463.22,320.81 L465.26,317.96 L468.63,315.11 L467.70,312.58 L469.21,310.77 L469.78,307.83 L467.06,307.39 L464.49,305.60 L462.39,303.43 L459.26,302.70 L459.99,298.64 L460.81,297.29 L460.59,292.38 L464.77,291.80 L466.94,290.56 L469.08,287.92 L471.39,287.02 L474.52,286.66 L474.45,284.26 L473.01,281.03 Z", "penghu": "M41.54,530.85 L42.36,533.86 L45.05,531.39 L46.66,531.71 L46.88,528.26 L46.00,526.58 L40.61,527.58 L39.28,528.47 L41.54,530.85 Z M83.32,396.78 L82.83,398.20 L81.33,399.11 L81.97,400.86 L87.24,398.69 L86.50,397.18 L84.13,395.64 L83.32,396.78 Z M96.60,517.46 L96.84,519.52 L98.18,519.44 L99.46,517.98 L99.75,516.43 L97.75,516.45 L96.60,517.46 Z M84.18,520.25 L85.82,521.08 L86.77,520.39 L86.64,518.79 L84.73,518.84 L84.18,520.25 Z M57.77,487.40 L58.25,491.33 L56.47,493.47 L57.37,494.32 L61.64,493.54 L61.22,491.44 L63.14,490.71 L61.41,488.60 L60.45,484.72 L58.57,485.84 L57.77,487.40 Z M18.00,482.74 L18.85,483.31 L20.81,482.64 L20.20,481.15 L18.88,479.99 L18.00,482.74 Z M64.77,491.17 L66.94,490.93 L69.31,491.41 L67.91,489.15 L65.44,489.93 L64.77,491.17 Z M62.11,462.51 L65.94,461.61 L67.75,460.32 L67.95,458.83 L64.28,460.18 L62.11,462.51 Z M77.65,418.79 L77.97,420.97 L80.53,423.68 L80.99,425.39 L79.48,427.70 L80.92,427.82 L83.15,428.94 L81.32,429.96 L83.06,431.59 L82.58,433.70 L83.42,434.76 L83.40,437.47 L82.07,437.60 L81.31,441.45 L78.67,440.31 L77.89,438.69 L78.82,436.85 L73.44,437.93 L74.61,439.99 L72.98,441.81 L74.45,443.01 L76.17,441.68 L77.39,442.82 L76.46,444.91 L73.56,446.11 L75.86,447.02 L78.31,446.49 L80.09,445.32 L81.84,446.13 L81.86,450.42 L80.99,451.85 L79.82,450.78 L77.73,451.92 L76.11,453.48 L75.61,450.52 L71.76,451.17 L72.22,449.03 L70.24,448.67 L72.27,452.60 L74.57,452.02 L76.09,454.00 L75.60,456.23 L78.73,455.94 L81.25,455.22 L83.72,456.11 L83.15,454.37 L84.17,453.82 L82.92,452.19 L84.83,449.28 L88.97,446.66 L92.32,443.53 L98.67,443.36 L99.46,445.77 L102.92,444.84 L102.71,443.44 L100.57,442.27 L100.00,437.47 L98.96,435.37 L95.64,436.26 L95.39,434.97 L94.12,433.78 L94.44,431.90 L89.62,436.09 L88.41,438.67 L87.31,437.08 L88.13,435.03 L86.54,432.24 L84.86,433.43 L84.14,431.28 L84.93,428.92 L83.25,428.72 L81.44,423.68 L82.11,422.17 L84.61,421.58 L82.81,418.22 L82.73,416.98 L81.45,415.61 L80.21,416.33 L77.96,414.87 L75.19,416.46 L71.86,417.07 L70.91,418.47 L71.63,419.76 L69.31,422.64 L68.52,423.95 L66.46,424.30 L63.82,422.96 L64.93,421.31 L63.50,420.49 L62.08,422.19 L61.16,424.96 L59.96,426.29 L60.38,428.06 L59.89,429.71 L61.43,430.60 L59.99,433.38 L57.98,433.62 L57.20,435.03 L59.52,435.80 L60.44,437.08 L60.14,439.14 L58.02,441.09 L56.83,441.12 L55.75,439.88 L54.53,441.43 L52.29,442.80 L54.21,443.70 L54.89,442.65 L57.17,443.00 L58.62,441.66 L62.86,442.65 L62.14,438.30 L63.11,437.36 L62.25,435.75 L63.82,435.25 L64.67,433.42 L64.04,431.55 L64.22,428.77 L63.39,427.30 L64.33,426.20 L66.25,426.47 L68.50,425.52 L68.62,423.92 L69.34,422.62 L71.59,419.91 L73.51,420.90 L75.50,418.58 L77.65,418.79 Z", "miaoli": "M454.33,230.81 L454.03,227.91 L454.64,227.11 L455.01,224.50 L454.03,222.45 L450.94,220.78 L450.50,218.75 L448.76,217.41 L447.46,215.32 L445.17,213.87 L446.01,211.65 L443.29,210.55 L441.66,210.43 L439.98,211.72 L437.99,212.13 L436.03,211.59 L434.07,212.82 L429.82,211.92 L428.65,210.54 L426.81,211.83 L425.20,211.81 L423.87,210.99 L421.52,211.89 L420.59,213.16 L418.20,214.29 L415.48,213.21 L412.18,213.43 L411.14,207.87 L413.66,206.41 L414.15,203.37 L412.57,201.34 L410.20,199.38 L411.94,197.94 L413.03,193.60 L414.75,191.38 L414.34,188.82 L413.27,188.24 L412.64,185.73 L411.34,185.30 L410.13,183.63 L408.06,185.19 L405.79,182.29 L402.71,180.92 L401.37,178.73 L399.31,178.96 L397.93,178.02 L398.41,175.20 L395.42,175.56 L393.16,173.37 L390.83,170.51 L390.81,168.59 L388.78,168.29 L388.56,166.63 L390.27,165.23 L389.75,161.43 L386.02,163.37 L384.48,161.73 L382.60,162.44 L381.61,161.39 L378.83,160.90 L377.31,159.27 L376.28,156.42 L374.98,154.51 L373.08,156.29 L371.65,156.70 L368.84,155.86 L365.90,158.63 L364.96,162.90 L363.99,164.81 L358.79,169.26 L357.67,171.93 L354.86,172.06 L352.21,172.88 L346.79,174.03 L345.08,176.68 L342.62,179.27 L341.90,183.48 L341.99,185.75 L339.54,186.32 L337.11,186.05 L334.66,186.96 L332.73,189.51 L331.29,192.41 L330.15,196.79 L327.42,202.30 L327.44,203.07 L325.86,207.80 L322.15,213.87 L321.17,215.95 L321.52,217.01 L316.09,223.53 L313.62,226.21 L311.09,227.92 L312.76,228.64 L313.47,229.95 L315.22,231.14 L315.98,233.81 L317.28,235.62 L319.39,236.33 L321.46,238.47 L323.69,241.85 L326.48,244.19 L327.16,245.99 L330.41,248.28 L333.96,249.05 L335.63,249.77 L339.72,253.61 L342.88,256.05 L347.60,257.94 L352.65,258.59 L355.14,260.60 L356.88,263.21 L358.67,264.72 L362.47,265.25 L364.14,265.09 L368.00,263.70 L374.67,264.34 L376.32,263.90 L378.56,261.84 L378.27,257.56 L377.33,253.95 L381.67,251.94 L383.21,252.87 L386.39,252.85 L387.10,253.79 L389.84,254.24 L392.07,253.66 L394.24,255.19 L397.16,254.63 L399.31,257.47 L400.04,259.53 L402.68,261.29 L403.78,263.02 L406.22,263.58 L407.79,262.56 L408.46,259.96 L411.61,258.64 L412.46,256.84 L414.33,256.54 L415.43,258.10 L417.20,257.62 L420.44,254.86 L421.84,255.42 L423.27,254.95 L424.10,252.20 L427.72,247.84 L429.52,248.24 L431.77,247.54 L433.73,247.55 L435.06,245.49 L434.89,244.55 L437.09,242.61 L438.65,242.47 L440.14,239.98 L440.23,238.77 L442.53,238.47 L443.35,240.61 L444.92,242.57 L447.87,241.94 L448.70,239.92 L448.63,238.59 L450.60,236.52 L450.27,234.44 L451.09,232.42 L453.72,231.78 L454.33,230.81 Z", "chiayicity": "M267.88,456.10 L265.43,456.98 L263.32,458.65 L262.35,457.42 L261.30,458.63 L259.08,458.68 L259.16,460.47 L260.28,460.71 L260.03,462.61 L261.24,463.52 L261.29,465.44 L260.14,467.53 L264.00,466.98 L264.86,468.08 L268.03,467.89 L268.21,469.97 L269.32,470.81 L270.36,473.15 L273.31,471.86 L274.32,469.90 L276.87,467.75 L278.69,467.66 L281.57,470.04 L282.83,469.89 L285.98,464.53 L285.03,463.54 L283.93,460.64 L281.51,460.47 L280.22,459.16 L280.47,457.91 L278.23,456.68 L277.20,458.28 L275.87,458.56 L273.37,454.48 L272.22,453.92 L270.88,455.03 L268.77,455.08 L267.88,456.10 Z", "hsinchucounty": "M392.97,105.84 L389.85,108.47 L388.39,111.44 L387.68,114.12 L385.51,117.43 L383.92,121.66 L381.14,125.13 L381.21,127.07 L382.68,127.71 L383.72,129.93 L386.07,131.58 L390.48,132.66 L391.93,132.34 L393.38,133.75 L396.16,134.57 L397.98,136.04 L400.88,139.59 L401.06,142.34 L402.27,144.24 L402.85,148.25 L402.44,150.20 L400.59,150.48 L399.15,147.11 L394.55,144.74 L392.92,145.64 L393.48,147.70 L391.50,148.97 L389.33,148.52 L388.78,150.65 L385.75,153.84 L383.61,153.59 L382.40,157.68 L382.33,160.40 L381.61,161.39 L382.60,162.44 L384.48,161.73 L386.02,163.37 L389.75,161.43 L390.27,165.23 L388.56,166.63 L388.78,168.29 L390.81,168.59 L390.83,170.51 L393.16,173.37 L395.42,175.56 L398.41,175.20 L397.93,178.02 L399.31,178.96 L401.37,178.73 L402.71,180.92 L405.79,182.29 L408.06,185.19 L410.13,183.63 L411.34,185.30 L412.64,185.73 L413.27,188.24 L414.34,188.82 L414.75,191.38 L413.03,193.60 L411.94,197.94 L410.20,199.38 L412.57,201.34 L414.15,203.37 L413.66,206.41 L411.14,207.87 L412.18,213.43 L415.48,213.21 L418.20,214.29 L420.59,213.16 L421.52,211.89 L423.87,210.99 L425.20,211.81 L426.81,211.83 L428.65,210.54 L429.82,211.92 L434.07,212.82 L436.03,211.59 L437.99,212.13 L439.98,211.72 L441.66,210.43 L443.29,210.55 L446.01,211.65 L445.17,213.87 L447.46,215.32 L448.76,217.41 L450.50,218.75 L450.94,220.78 L454.03,222.45 L455.01,224.50 L454.64,227.11 L454.03,227.91 L454.33,230.81 L456.39,231.20 L464.45,229.91 L467.18,227.73 L468.80,224.01 L470.16,222.18 L471.52,221.44 L473.64,217.34 L476.27,216.82 L478.04,214.46 L479.42,213.87 L479.86,211.12 L482.16,210.98 L483.75,207.84 L485.35,207.39 L486.24,206.29 L485.14,203.71 L485.57,201.90 L484.73,199.70 L486.02,198.38 L486.73,196.57 L488.58,195.58 L488.16,194.02 L486.55,190.99 L483.07,192.28 L479.70,190.43 L477.68,188.26 L476.64,184.71 L478.14,181.43 L476.47,180.75 L475.15,177.98 L475.48,172.55 L473.29,172.00 L472.12,169.48 L470.08,166.67 L467.59,165.04 L466.33,165.08 L464.30,166.22 L463.32,165.33 L465.14,159.59 L464.60,158.08 L463.12,156.94 L463.61,154.37 L464.60,153.17 L465.12,150.95 L463.74,149.02 L461.78,147.98 L458.31,147.09 L456.87,145.32 L454.51,144.43 L454.72,142.43 L451.59,140.63 L451.16,138.26 L447.28,139.32 L445.81,140.11 L445.40,137.13 L443.13,137.66 L441.77,136.54 L437.26,133.89 L435.11,133.22 L435.66,132.17 L432.31,130.81 L430.20,129.26 L431.30,126.24 L432.27,125.50 L431.18,120.44 L428.55,120.34 L427.26,119.82 L426.04,120.50 L421.59,119.78 L420.44,118.91 L421.01,117.61 L420.58,116.05 L416.87,117.12 L414.85,115.79 L412.04,115.62 L409.36,113.76 L409.75,110.52 L408.55,106.62 L406.49,104.84 L404.77,104.23 L400.44,105.60 L397.70,104.18 L396.78,105.69 L392.97,105.84 Z", "newtaipei": "M503.79,170.90 L506.61,171.04 L510.96,168.31 L513.66,168.57 L514.81,167.49 L516.46,167.35 L516.80,164.55 L518.02,163.09 L519.61,163.09 L522.21,161.38 L525.26,161.80 L525.71,159.38 L527.84,159.56 L529.46,157.33 L529.87,152.68 L528.64,151.99 L528.61,149.63 L529.92,148.06 L530.20,146.71 L529.22,144.32 L529.29,143.11 L532.08,142.63 L532.90,141.52 L535.34,141.81 L536.54,141.10 L536.51,137.91 L544.26,137.27 L546.17,135.86 L547.99,136.54 L548.84,135.72 L550.80,135.74 L550.42,133.89 L552.37,132.59 L555.21,130.05 L556.40,129.76 L558.13,127.77 L560.04,126.45 L562.63,127.15 L566.90,126.06 L568.73,123.86 L570.07,123.64 L571.85,121.82 L571.52,118.08 L574.05,116.44 L573.84,115.53 L576.69,115.20 L577.99,114.61 L579.74,114.83 L582.69,114.31 L587.67,109.34 L586.06,106.21 L584.57,105.16 L584.94,102.18 L586.23,100.72 L589.33,99.91 L591.74,100.61 L597.43,99.09 L598.71,97.28 L600.36,97.19 L601.73,96.04 L603.15,96.26 L605.52,95.69 L607.95,93.95 L612.22,94.05 L612.89,95.15 L616.62,93.10 L619.52,91.00 L621.57,90.33 L622.00,88.40 L620.00,86.20 L618.23,86.10 L615.30,84.62 L612.59,85.53 L608.20,85.85 L605.29,83.01 L604.38,81.16 L605.05,77.06 L604.97,75.30 L602.99,73.16 L601.58,72.43 L601.13,70.10 L601.95,67.12 L602.99,65.53 L603.22,63.59 L602.01,62.37 L603.33,60.79 L603.45,59.21 L599.73,61.23 L595.79,61.66 L595.16,61.03 L590.83,61.02 L586.62,59.85 L583.30,59.55 L581.90,60.96 L580.06,60.95 L579.69,58.30 L577.37,58.40 L576.35,57.76 L576.73,60.38 L575.13,63.02 L573.36,63.46 L569.57,61.60 L568.17,63.46 L566.47,63.47 L565.74,64.44 L566.64,66.37 L566.28,67.90 L567.03,71.81 L568.81,71.97 L570.18,73.86 L567.19,77.06 L566.49,76.44 L563.49,78.03 L561.62,77.60 L560.39,78.10 L558.33,76.70 L555.97,74.35 L553.04,74.49 L550.59,73.44 L547.62,70.53 L544.56,69.07 L542.11,66.87 L542.47,65.36 L541.14,63.20 L540.44,59.75 L537.37,58.20 L536.76,56.82 L538.49,55.78 L541.18,55.33 L543.82,53.73 L546.28,53.44 L550.35,51.44 L551.31,50.26 L552.98,50.00 L553.68,48.55 L555.19,48.03 L552.72,46.64 L551.25,46.65 L550.01,44.58 L550.35,43.20 L552.07,41.34 L550.00,40.14 L548.65,41.48 L546.74,41.42 L544.85,40.25 L542.77,38.08 L541.92,36.24 L542.49,34.86 L540.38,34.48 L538.42,32.35 L538.65,29.76 L538.18,27.37 L536.60,24.91 L534.70,23.03 L532.21,22.09 L530.54,20.26 L527.77,19.42 L526.04,18.00 L523.84,18.00 L523.03,19.33 L519.58,19.60 L517.38,18.76 L516.12,19.13 L514.42,21.03 L511.19,21.04 L507.30,22.95 L503.31,25.86 L503.63,26.63 L502.26,28.74 L500.82,29.68 L497.83,29.50 L496.55,30.77 L495.88,33.90 L494.96,35.31 L494.69,37.38 L493.34,38.11 L491.42,40.90 L489.46,44.67 L487.87,44.93 L487.09,46.45 L487.29,48.44 L488.73,49.88 L485.97,53.07 L482.84,55.41 L479.98,56.38 L479.48,57.03 L476.11,58.28 L474.67,59.21 L470.80,60.47 L465.75,60.83 L464.52,60.12 L461.58,62.05 L459.74,62.29 L459.55,64.05 L462.99,65.41 L464.04,67.30 L465.75,67.37 L469.02,68.34 L472.18,70.53 L473.79,70.52 L473.90,71.83 L475.75,75.06 L480.68,74.83 L482.85,75.53 L483.79,77.72 L485.92,78.52 L485.48,83.64 L487.87,85.93 L487.58,86.71 L484.31,87.20 L484.07,88.29 L485.64,89.20 L486.54,90.88 L484.53,92.63 L482.21,92.29 L481.83,94.95 L478.87,96.69 L477.69,96.02 L475.55,96.45 L472.87,95.68 L469.55,96.53 L470.08,99.12 L469.71,103.47 L469.07,104.81 L466.97,106.08 L468.63,107.84 L470.97,108.19 L471.13,109.44 L468.95,109.78 L467.37,111.50 L469.31,113.26 L468.32,114.64 L468.47,115.86 L470.92,117.55 L472.87,117.32 L473.67,120.41 L475.64,122.05 L473.73,123.29 L474.06,124.80 L476.16,126.87 L471.74,128.17 L472.44,129.35 L473.95,128.76 L475.75,129.23 L476.42,130.32 L480.00,131.82 L484.38,129.24 L486.54,129.34 L489.37,131.28 L489.68,133.76 L491.22,133.81 L492.55,136.31 L494.04,137.00 L494.54,141.20 L496.98,143.41 L494.47,146.06 L491.58,148.07 L491.10,149.32 L492.26,151.40 L492.29,152.65 L493.74,156.14 L493.57,157.14 L495.18,158.79 L497.11,163.05 L502.52,165.44 L502.27,166.91 L502.91,169.56 L503.79,170.90 Z M521.59,39.55 L522.88,41.81 L524.67,43.26 L526.95,43.25 L527.15,44.79 L526.48,46.57 L527.05,47.67 L525.67,49.35 L526.04,50.47 L528.48,50.92 L529.80,55.85 L531.67,57.66 L531.13,60.16 L529.77,63.28 L530.19,64.19 L534.17,65.55 L536.00,67.28 L537.16,69.88 L536.19,71.32 L535.57,73.97 L534.37,75.36 L535.67,76.36 L534.44,79.22 L535.72,81.22 L542.02,84.25 L545.55,83.70 L545.14,85.29 L542.00,85.13 L541.30,85.66 L537.66,85.02 L536.02,86.76 L533.06,86.14 L530.22,87.39 L529.77,89.28 L530.86,90.76 L530.33,92.34 L530.79,96.65 L533.29,97.23 L534.58,98.97 L531.22,100.52 L527.50,99.98 L526.08,99.24 L524.69,99.79 L522.05,99.66 L520.22,95.78 L518.51,95.05 L518.12,93.88 L515.82,92.93 L515.60,89.29 L512.75,86.30 L510.63,85.69 L508.57,87.87 L506.77,88.75 L505.82,87.59 L505.78,85.31 L505.15,83.77 L505.50,82.20 L509.03,79.18 L509.87,73.58 L508.87,70.64 L505.78,67.22 L503.52,66.19 L500.71,66.10 L498.69,64.27 L500.20,60.67 L500.57,58.85 L503.96,55.04 L505.27,54.08 L506.62,51.71 L508.11,50.46 L508.94,48.56 L510.84,49.53 L512.78,49.56 L513.18,47.14 L514.06,46.26 L515.81,46.04 L517.92,44.75 L520.65,39.98 L521.59,39.55 Z", "hualien": "M402.47,508.03 L404.95,507.25 L405.74,508.23 L408.63,509.61 L410.04,512.45 L409.74,513.92 L411.82,519.87 L414.85,523.75 L416.83,523.52 L418.28,524.94 L420.47,526.07 L424.15,525.70 L425.11,526.10 L427.48,531.44 L429.46,532.14 L431.12,531.78 L432.36,530.29 L435.58,529.35 L438.61,530.89 L439.71,533.63 L440.56,534.59 L440.81,537.90 L443.80,542.88 L443.69,545.25 L446.58,546.55 L447.91,546.69 L449.63,549.27 L452.03,548.59 L453.93,549.92 L454.36,551.16 L456.04,552.80 L455.42,555.35 L456.91,556.07 L458.64,556.04 L459.94,554.71 L464.06,553.62 L467.03,553.70 L468.50,551.40 L467.99,547.06 L468.77,545.72 L468.82,542.84 L467.31,540.38 L468.31,539.34 L468.85,537.02 L471.20,537.25 L472.31,533.40 L473.96,529.55 L473.85,527.65 L476.09,526.14 L475.23,524.15 L477.24,520.45 L476.73,519.80 L477.69,517.71 L479.23,516.62 L479.50,515.48 L480.91,514.77 L480.59,508.36 L480.89,507.16 L483.15,504.71 L483.67,502.29 L485.85,501.65 L486.34,499.01 L488.13,496.03 L490.85,493.80 L490.96,492.62 L487.53,491.51 L485.87,486.42 L488.20,483.15 L490.36,478.68 L490.26,478.09 L493.33,474.81 L495.04,474.54 L496.16,472.29 L502.30,472.90 L503.92,475.31 L506.22,474.23 L507.37,474.35 L507.77,470.67 L508.91,466.57 L510.12,464.92 L510.26,463.51 L511.59,461.03 L509.77,460.41 L509.11,456.34 L508.99,453.17 L510.85,445.22 L514.16,439.30 L514.96,434.61 L515.01,427.97 L516.07,422.72 L517.84,420.76 L517.53,419.28 L518.31,417.64 L518.63,414.95 L520.23,409.61 L519.38,408.59 L519.26,406.31 L520.25,403.38 L521.79,402.14 L523.80,397.33 L524.66,394.57 L524.20,394.02 L524.06,389.58 L524.70,384.17 L525.49,382.01 L527.01,379.75 L529.26,373.63 L530.31,370.06 L531.52,363.76 L531.87,360.35 L531.68,358.22 L533.29,352.07 L532.05,346.86 L532.63,345.05 L535.18,341.17 L537.97,339.43 L538.95,337.48 L540.49,335.77 L541.34,333.84 L540.41,331.16 L538.59,329.78 L537.20,327.94 L535.45,324.29 L534.54,321.34 L534.24,318.55 L534.74,315.20 L535.96,312.50 L538.19,309.61 L542.67,306.41 L544.90,302.97 L545.68,299.47 L544.33,296.16 L543.93,292.07 L545.04,288.12 L547.50,284.92 L550.09,283.73 L552.38,281.83 L554.49,280.63 L556.01,277.62 L557.15,276.35 L559.54,275.72 L563.16,271.63 L563.76,268.07 L565.94,264.46 L568.73,261.68 L569.70,258.88 L566.46,258.96 L563.20,256.83 L560.91,256.73 L559.44,256.08 L556.24,255.85 L552.67,254.08 L550.63,254.21 L549.57,252.46 L547.79,253.26 L545.11,250.41 L542.83,248.82 L541.66,250.29 L539.76,248.31 L539.13,246.98 L537.75,246.28 L535.60,246.17 L535.74,248.54 L537.89,251.54 L536.62,252.57 L532.51,253.76 L531.02,256.67 L532.31,259.25 L529.36,258.42 L528.13,258.63 L525.55,257.68 L523.85,258.02 L521.73,256.83 L521.01,254.98 L519.15,253.52 L517.16,253.64 L514.68,252.92 L513.96,252.04 L510.55,252.37 L509.28,251.91 L507.93,252.83 L505.06,250.53 L500.48,248.84 L497.31,246.42 L495.08,247.86 L493.66,250.64 L494.13,251.99 L492.99,255.07 L493.53,256.80 L491.58,258.82 L490.96,260.22 L486.92,260.27 L486.51,263.04 L484.84,265.16 L483.71,264.81 L481.38,267.36 L482.54,271.06 L482.39,273.34 L478.31,274.08 L476.48,276.12 L475.13,276.08 L475.08,278.35 L473.01,281.03 L474.45,284.26 L474.52,286.66 L471.39,287.02 L469.08,287.92 L466.94,290.56 L464.77,291.80 L460.59,292.38 L460.81,297.29 L459.99,298.64 L459.26,302.70 L462.39,303.43 L464.49,305.60 L467.06,307.39 L469.78,307.83 L469.21,310.77 L467.70,312.58 L468.63,315.11 L465.26,317.96 L463.22,320.81 L462.45,320.27 L459.64,322.68 L460.18,326.29 L458.16,329.94 L458.12,330.96 L456.71,334.25 L454.68,337.36 L454.82,340.51 L455.53,341.95 L457.54,342.01 L458.46,344.27 L457.83,345.81 L457.66,349.21 L457.16,351.02 L458.14,354.85 L457.83,358.50 L455.87,358.60 L454.71,359.74 L455.82,360.71 L455.72,362.64 L456.32,364.45 L455.12,365.44 L455.60,367.06 L454.04,367.12 L452.90,368.23 L451.96,372.12 L449.82,375.01 L448.73,381.92 L447.13,382.87 L446.71,385.38 L447.35,388.51 L442.03,391.65 L442.44,393.95 L445.82,396.47 L448.29,396.99 L447.47,398.43 L447.64,402.01 L448.43,402.04 L449.85,405.37 L450.21,407.13 L449.81,409.43 L449.83,412.60 L448.26,415.00 L449.07,416.73 L449.03,418.51 L448.15,419.69 L447.78,422.05 L446.38,424.38 L446.57,427.21 L444.88,430.25 L444.03,433.71 L442.49,434.85 L440.99,434.73 L439.67,433.72 L438.58,435.15 L436.45,436.30 L436.27,437.90 L434.09,437.13 L430.55,437.08 L430.19,440.18 L432.13,441.31 L431.43,443.63 L430.01,443.74 L428.92,444.96 L429.99,447.24 L429.08,450.05 L429.95,451.32 L427.23,453.21 L426.53,454.62 L424.45,454.17 L423.11,453.20 L419.37,453.72 L417.96,453.04 L416.76,454.75 L414.69,454.75 L411.48,453.83 L411.54,454.70 L410.03,458.50 L407.93,459.90 L408.11,461.35 L404.88,464.67 L406.72,466.06 L408.60,468.36 L407.66,470.41 L403.88,471.64 L402.03,473.30 L399.50,474.22 L401.13,476.73 L402.65,477.26 L402.08,481.36 L401.15,482.79 L399.46,483.64 L397.35,483.73 L396.35,484.81 L397.82,486.10 L396.06,487.21 L394.19,489.77 L393.45,490.02 L393.21,492.95 L396.30,493.58 L397.82,494.63 L398.34,496.06 L401.10,495.53 L401.64,497.55 L404.34,499.17 L404.93,500.18 L407.05,501.13 L406.52,505.10 L403.37,506.38 L402.47,508.03 Z", "kaohsiung": "M266.85,708.87 L267.23,703.70 L266.58,698.73 L268.38,692.49 L269.67,691.59 L271.04,687.97 L272.00,682.19 L271.58,678.67 L269.97,677.10 L269.22,675.45 L268.97,673.06 L269.49,671.32 L269.39,668.90 L269.68,662.83 L271.01,658.07 L272.00,657.28 L272.92,654.79 L273.97,649.72 L273.53,637.26 L274.34,633.36 L275.83,629.70 L276.57,625.95 L276.88,622.30 L278.55,620.43 L285.01,622.05 L286.14,622.79 L289.16,621.73 L292.34,622.62 L295.84,622.82 L298.59,620.72 L300.59,618.06 L305.33,614.13 L307.54,611.90 L309.94,610.95 L310.90,611.26 L316.42,608.92 L317.23,610.90 L319.42,610.49 L319.51,613.52 L320.05,615.17 L322.65,615.96 L324.08,614.37 L326.63,613.90 L326.98,613.01 L330.07,609.89 L334.40,609.99 L336.24,611.33 L338.35,611.76 L339.92,613.73 L341.14,613.94 L342.74,615.92 L343.61,617.87 L345.42,620.47 L346.37,621.13 L349.56,619.73 L349.80,617.00 L351.45,617.29 L354.33,615.61 L356.27,613.77 L358.55,613.54 L359.54,614.05 L360.90,616.55 L361.94,617.09 L363.10,615.69 L364.67,617.21 L365.73,619.22 L366.71,615.52 L365.10,614.77 L365.78,612.03 L364.65,610.62 L362.84,610.63 L360.64,609.88 L359.92,608.95 L358.67,605.23 L357.64,604.27 L358.69,602.28 L357.26,598.41 L356.12,596.66 L356.12,594.17 L356.74,592.61 L355.92,590.39 L357.99,588.14 L358.46,585.67 L360.57,584.51 L360.64,582.99 L362.85,580.96 L362.66,579.58 L364.82,578.84 L365.13,575.36 L364.92,573.52 L365.68,572.82 L369.07,572.30 L369.46,570.00 L367.94,568.31 L366.74,566.18 L368.15,563.99 L368.72,561.67 L370.42,559.02 L371.23,556.18 L371.28,553.84 L370.30,551.44 L370.95,547.32 L370.45,545.42 L368.36,543.73 L369.97,543.20 L370.92,542.01 L372.53,541.45 L372.74,538.77 L373.31,537.67 L376.46,535.08 L375.14,532.66 L375.16,530.58 L376.26,529.57 L376.28,524.87 L377.21,522.51 L379.54,520.93 L380.82,521.38 L382.19,520.75 L382.93,519.09 L384.09,518.85 L386.69,515.86 L389.59,511.93 L391.34,511.67 L392.98,512.15 L394.05,511.21 L396.41,510.42 L398.48,509.10 L401.41,508.88 L402.47,508.03 L403.37,506.38 L406.52,505.10 L407.05,501.13 L404.93,500.18 L404.34,499.17 L401.64,497.55 L401.10,495.53 L398.34,496.06 L397.82,494.63 L396.30,493.58 L393.21,492.95 L393.45,490.02 L394.19,489.77 L396.06,487.21 L397.82,486.10 L396.35,484.81 L397.35,483.73 L399.46,483.64 L401.15,482.79 L402.08,481.36 L402.65,477.26 L401.13,476.73 L399.50,474.22 L398.43,471.60 L399.65,470.18 L397.83,467.49 L396.07,467.62 L389.17,465.51 L386.58,465.82 L384.51,467.14 L381.88,467.23 L380.63,468.87 L378.48,468.37 L375.89,468.69 L372.81,470.50 L370.84,473.86 L368.18,475.10 L365.70,476.98 L364.52,476.71 L362.34,477.91 L362.30,479.88 L359.82,483.33 L359.06,485.93 L358.12,486.19 L357.67,488.91 L355.97,490.06 L354.96,489.83 L352.29,490.85 L350.24,493.44 L348.58,494.63 L347.56,496.93 L342.17,496.50 L341.49,499.26 L339.58,501.92 L337.84,502.33 L337.52,503.28 L335.56,504.63 L335.64,505.96 L331.62,505.21 L329.61,507.24 L329.56,509.75 L328.69,511.13 L327.36,511.13 L322.38,509.78 L319.36,508.33 L317.75,509.39 L316.91,507.97 L315.78,509.18 L316.19,511.85 L315.48,515.57 L315.80,517.94 L317.23,519.83 L317.75,522.54 L317.46,524.88 L318.34,525.81 L318.96,527.45 L317.88,529.75 L316.05,531.02 L314.55,534.18 L315.32,536.08 L314.43,537.93 L310.98,540.92 L310.08,540.84 L308.86,542.75 L308.98,543.67 L306.57,545.50 L303.73,550.82 L303.67,552.84 L300.93,557.28 L300.68,558.40 L298.88,560.77 L297.06,562.34 L295.83,564.16 L292.43,565.93 L289.06,568.67 L289.18,569.23 L285.84,572.27 L284.74,573.78 L280.01,576.98 L279.06,579.94 L275.00,579.97 L275.16,582.70 L273.83,582.98 L273.38,586.04 L271.53,585.81 L268.86,591.56 L267.86,595.34 L266.41,598.09 L265.16,601.28 L263.72,601.84 L260.57,599.72 L257.54,600.25 L256.35,600.89 L252.72,605.81 L250.46,607.97 L246.29,607.91 L245.10,605.70 L243.62,606.45 L242.28,605.37 L239.64,605.17 L235.52,604.12 L234.01,604.44 L234.41,606.19 L233.20,606.45 L230.07,604.83 L228.69,606.68 L226.19,604.43 L223.82,603.72 L223.69,601.52 L222.49,601.36 L221.10,602.94 L219.83,602.73 L214.79,600.09 L213.81,600.33 L210.97,602.41 L211.95,605.78 L214.74,612.90 L215.34,616.83 L215.83,617.53 L218.53,625.10 L217.14,626.78 L217.36,628.21 L219.32,627.91 L220.64,630.45 L225.29,641.78 L229.21,650.05 L230.43,654.27 L231.96,652.10 L233.37,652.83 L232.56,654.04 L233.30,658.22 L231.01,659.84 L230.77,660.82 L228.53,662.76 L227.86,664.88 L228.15,667.59 L229.89,670.44 L230.78,672.88 L228.87,673.80 L230.54,675.33 L233.42,678.84 L234.30,680.42 L239.80,687.50 L239.90,688.30 L242.80,690.66 L242.30,691.69 L247.55,697.06 L255.25,703.66 L260.06,707.03 L260.81,707.94 L264.77,709.18 L266.85,708.87 Z", "changhua": "M315.39,388.30 L315.88,388.38 L321.28,386.46 L324.29,384.48 L323.83,381.48 L323.04,379.98 L320.94,381.21 L317.99,381.83 L315.03,379.33 L314.69,376.91 L313.83,376.81 L311.09,374.00 L312.08,372.15 L311.92,370.57 L310.85,368.82 L312.11,366.91 L312.91,362.97 L313.97,362.38 L314.09,360.19 L313.41,357.83 L314.67,354.37 L312.93,353.13 L314.52,351.21 L312.88,348.27 L314.26,347.57 L316.85,344.86 L316.72,342.53 L317.52,339.49 L314.75,337.45 L314.44,336.30 L315.64,333.93 L320.11,333.87 L322.25,333.50 L323.99,332.47 L320.07,329.60 L318.86,328.40 L316.36,329.57 L314.46,328.31 L312.77,328.67 L311.77,327.77 L312.66,326.51 L311.60,323.16 L312.11,321.97 L312.05,319.07 L310.68,317.87 L309.77,315.33 L309.15,310.79 L303.72,309.89 L302.64,309.08 L300.24,309.39 L294.09,307.38 L293.06,305.60 L291.24,304.98 L289.20,301.72 L289.68,299.41 L287.77,295.25 L285.68,290.04 L284.89,289.11 L280.73,287.56 L279.16,290.18 L275.42,294.74 L276.49,295.44 L274.81,296.97 L270.13,297.17 L264.60,303.61 L262.36,305.08 L258.62,310.28 L260.15,309.86 L262.16,310.71 L264.45,310.14 L265.41,306.18 L269.65,306.17 L268.43,312.56 L268.82,314.03 L267.35,315.27 L265.84,314.82 L260.75,314.92 L260.45,315.51 L257.67,316.21 L256.41,317.16 L256.52,321.70 L261.05,321.60 L260.64,323.25 L255.06,326.15 L254.42,327.97 L252.23,330.88 L248.90,338.30 L245.74,338.68 L243.76,344.32 L240.00,350.44 L240.30,351.10 L243.30,351.62 L240.08,358.60 L238.31,361.47 L237.90,363.03 L236.59,364.86 L236.21,366.37 L233.64,368.59 L230.52,368.24 L230.13,369.70 L226.05,374.52 L228.95,376.51 L240.84,379.91 L242.69,379.98 L246.43,379.42 L252.49,379.19 L254.79,377.89 L257.67,377.89 L263.78,378.42 L267.10,377.48 L268.89,377.50 L273.14,380.67 L274.50,380.94 L280.11,383.27 L286.38,384.86 L290.36,385.10 L291.72,384.57 L295.56,384.64 L297.42,385.34 L300.38,385.78 L304.71,387.08 L309.70,387.00 L313.12,387.39 L315.39,388.30 Z", "chiayicounty": "M318.34,525.81 L317.46,524.88 L317.75,522.54 L317.23,519.83 L315.80,517.94 L315.48,515.57 L316.19,511.85 L315.78,509.18 L316.91,507.97 L317.75,509.39 L319.36,508.33 L322.38,509.78 L327.36,511.13 L328.69,511.13 L329.56,509.75 L329.61,507.24 L331.62,505.21 L335.64,505.96 L335.56,504.63 L337.52,503.28 L337.84,502.33 L339.58,501.92 L341.49,499.26 L342.17,496.50 L347.56,496.93 L348.58,494.63 L350.24,493.44 L352.29,490.85 L354.96,489.83 L355.97,490.06 L357.67,488.91 L358.12,486.19 L359.06,485.93 L359.82,483.33 L362.30,479.88 L362.34,477.91 L364.52,476.71 L365.70,476.98 L368.18,475.10 L370.84,473.86 L372.81,470.50 L375.89,468.69 L378.48,468.37 L380.63,468.87 L381.88,467.23 L384.51,467.14 L386.58,465.82 L384.30,466.40 L382.04,464.94 L380.73,465.54 L377.64,464.31 L370.79,464.32 L369.27,466.28 L367.70,466.09 L365.45,464.82 L360.06,465.41 L358.50,464.46 L357.31,462.48 L356.93,459.57 L356.35,458.46 L356.42,455.69 L355.28,452.63 L353.18,449.56 L353.05,448.00 L354.38,444.59 L355.85,443.06 L355.61,439.98 L356.94,437.19 L355.84,436.42 L354.31,433.62 L352.06,434.65 L350.00,434.50 L349.20,433.63 L346.65,433.47 L343.09,430.80 L341.06,430.31 L335.70,431.22 L334.36,432.97 L336.10,434.53 L335.50,435.51 L336.39,437.63 L335.99,439.44 L336.74,441.10 L334.24,440.74 L332.91,441.44 L331.21,441.00 L330.89,439.96 L327.44,439.66 L323.44,441.08 L322.00,439.14 L317.75,440.61 L316.23,439.00 L317.32,438.10 L317.28,435.50 L313.23,436.30 L312.06,436.15 L310.58,437.75 L306.33,437.97 L304.05,437.36 L302.17,438.24 L299.79,436.80 L296.88,436.51 L296.61,435.61 L292.18,435.15 L287.84,431.14 L285.33,427.45 L284.70,425.22 L280.72,426.36 L279.11,425.85 L274.98,426.70 L273.56,427.42 L271.45,426.38 L270.67,427.51 L266.45,429.18 L265.21,428.28 L262.05,427.26 L258.44,428.72 L256.91,431.43 L253.94,431.95 L253.80,433.11 L251.73,435.32 L246.58,435.87 L246.31,439.19 L243.40,440.63 L241.68,440.00 L240.46,440.71 L240.49,442.95 L237.51,442.63 L236.60,443.37 L236.97,445.81 L233.64,447.81 L232.84,450.68 L230.67,449.97 L229.16,447.07 L226.54,447.50 L226.00,448.88 L227.13,454.38 L225.88,456.15 L221.74,457.29 L217.68,455.52 L215.60,455.21 L214.31,455.89 L212.17,455.89 L209.07,454.13 L207.17,454.45 L204.42,453.25 L203.66,454.08 L200.24,453.41 L198.38,454.67 L198.49,459.46 L199.67,461.11 L201.66,461.25 L207.11,459.57 L206.65,462.25 L204.27,465.19 L204.67,466.88 L204.13,468.22 L201.84,469.60 L203.09,470.43 L205.28,469.55 L205.30,472.59 L204.34,475.84 L205.24,477.26 L205.22,481.34 L207.59,481.34 L208.43,484.54 L207.09,486.97 L205.88,485.78 L204.75,486.62 L204.79,488.63 L202.88,489.16 L200.74,491.58 L199.27,493.95 L198.18,497.49 L201.39,500.05 L205.02,502.49 L205.03,503.79 L209.25,505.44 L211.11,508.70 L212.22,509.55 L214.72,507.28 L216.76,508.92 L218.48,509.46 L221.24,508.32 L222.38,506.53 L223.59,503.34 L225.07,500.74 L226.86,500.76 L229.23,499.72 L231.63,497.37 L230.23,496.44 L231.82,494.21 L234.02,495.65 L235.92,495.01 L235.38,492.96 L235.83,490.89 L237.42,488.87 L241.48,488.85 L241.49,486.35 L243.02,485.67 L243.87,486.85 L246.56,486.28 L248.65,483.67 L250.12,482.52 L257.21,482.00 L262.51,480.33 L266.74,481.27 L270.77,479.62 L276.03,482.65 L277.91,483.30 L279.28,485.88 L281.88,483.93 L283.72,485.81 L280.62,487.67 L281.26,489.45 L283.77,490.67 L284.90,490.42 L286.69,492.69 L286.59,493.81 L284.72,494.77 L284.90,495.95 L291.46,498.40 L292.87,500.49 L290.98,502.92 L288.95,504.45 L289.74,509.17 L288.80,510.30 L288.87,513.73 L290.51,517.67 L290.73,519.82 L288.17,522.19 L289.81,524.21 L293.22,525.02 L296.20,527.50 L298.49,526.69 L301.47,528.18 L303.30,525.94 L304.57,522.69 L305.72,524.72 L308.54,526.28 L314.09,524.70 L316.24,525.62 L318.34,525.81 Z M267.88,456.10 L268.77,455.08 L270.88,455.03 L272.22,453.92 L273.37,454.48 L275.87,458.56 L277.20,458.28 L278.23,456.68 L280.47,457.91 L280.22,459.16 L281.51,460.47 L283.93,460.64 L285.03,463.54 L285.98,464.53 L282.83,469.89 L281.57,470.04 L278.69,467.66 L276.87,467.75 L274.32,469.90 L273.31,471.86 L270.36,473.15 L269.32,470.81 L268.21,469.97 L268.03,467.89 L264.86,468.08 L264.00,466.98 L260.14,467.53 L261.29,465.44 L261.24,463.52 L260.03,462.61 L260.28,460.71 L259.16,460.47 L259.08,458.68 L261.30,458.63 L262.35,457.42 L263.32,458.65 L265.43,456.98 L267.88,456.10 Z", "hsinchucity": "M381.21,127.07 L379.37,127.74 L378.88,129.06 L374.47,135.73 L373.25,139.73 L371.98,142.83 L372.03,147.48 L372.93,147.81 L373.57,149.67 L368.84,155.86 L371.65,156.70 L373.08,156.29 L374.98,154.51 L376.28,156.42 L377.31,159.27 L378.83,160.90 L381.61,161.39 L382.33,160.40 L382.40,157.68 L383.61,153.59 L385.75,153.84 L388.78,150.65 L389.33,148.52 L391.50,148.97 L393.48,147.70 L392.92,145.64 L394.55,144.74 L399.15,147.11 L400.59,150.48 L402.44,150.20 L402.85,148.25 L402.27,144.24 L401.06,142.34 L400.88,139.59 L397.98,136.04 L396.16,134.57 L393.38,133.75 L391.93,132.34 L390.48,132.66 L386.07,131.58 L383.72,129.93 L382.68,127.71 L381.21,127.07 Z"}, "centroids": {"taitung": [403.4, 611.5], "yilan": [539.7, 196.3], "taipei": [520.3, 70.7], "yunlin": [258.4, 412.1], "taoyuan": [454.2, 114.9], "pingtung": [323.8, 707.1], "taichung": [372.2, 277.6], "tainan": [244.7, 543.9], "keelung": [557.2, 62.5], "nantou": [392.1, 374.4], "penghu": [80.4, 437.2], "miaoli": [378.9, 217.7], "chiayicity": [272.3, 463.2], "hsinchucounty": [432.9, 169.2], "newtaipei": [528.6, 91.7], "hualien": [481.1, 396.2], "kaohsiung": [310.8, 581.0], "changhua": [280.2, 346.1], "chiayicounty": [288.0, 470.7], "hsinchucity": [384.5, 143.4]}}, "insets": {"lienchiang": {"viewBox": "0 0 110.0 91.6", "path": "M27.20,45.52 L25.37,45.44 L24.41,45.90 L24.39,46.76 L23.64,47.18 L22.19,46.36 L22.51,44.95 L21.90,44.97 L21.13,46.53 L21.35,46.81 L20.38,48.32 L21.02,48.87 L22.71,48.90 L23.34,48.43 L24.23,48.70 L25.08,47.49 L25.83,47.69 L26.62,46.66 L26.89,45.83 L27.21,45.52 L27.20,45.52 Z M28.80,31.24 L28.52,32.37 L29.30,32.73 L30.09,31.63 L29.37,30.65 L28.80,31.24 Z M88.82,20.45 L89.62,19.93 L89.42,19.20 L88.68,18.26 L87.39,19.37 L87.55,19.80 L87.06,20.91 L87.80,21.00 L88.82,20.45 Z M28.26,70.63 L27.61,71.53 L27.42,72.39 L27.99,73.31 L29.58,71.50 L28.26,70.63 Z M27.71,41.34 L27.79,39.92 L28.26,39.42 L29.46,38.95 L29.98,39.32 L30.78,38.44 L32.19,38.61 L31.52,36.86 L30.46,36.40 L29.01,38.09 L28.52,37.97 L27.39,38.97 L27.58,39.67 L26.96,41.00 L27.71,41.34 Z M22.77,71.02 L23.40,71.44 L24.99,69.96 L24.86,69.62 L22.40,69.64 L22.09,70.09 L22.77,71.02 Z", "centroid": [23.5, 47.1]}, "kinmen": {"viewBox": "0 0 110.0 74.9", "path": "M60.40,45.94 L65.42,44.11 L68.63,43.62 L70.90,44.24 L73.63,46.24 L77.40,46.85 L80.01,51.28 L81.64,51.10 L84.65,49.00 L87.71,45.82 L86.47,43.65 L87.19,42.35 L89.61,42.07 L89.62,39.94 L88.02,38.72 L86.92,35.99 L85.88,30.56 L82.93,24.13 L82.99,22.11 L78.84,22.11 L76.77,17.03 L74.98,16.34 L73.43,17.39 L72.90,19.65 L67.86,21.96 L68.57,27.36 L65.03,29.64 L66.22,32.74 L65.69,34.29 L61.49,36.21 L55.02,34.48 L52.83,33.01 L46.66,27.69 L44.25,28.31 L40.59,31.39 L39.56,33.83 L43.66,36.08 L43.36,38.22 L44.44,39.85 L45.76,45.87 L43.03,47.24 L42.72,49.53 L41.18,50.39 L38.04,49.73 L37.49,51.20 L42.39,55.39 L44.45,55.92 L48.27,58.58 L51.14,57.79 L53.69,51.76 L56.55,48.07 L60.40,45.94 Z M32.93,46.87 L33.93,41.51 L32.81,41.27 L29.69,38.70 L27.58,39.77 L25.51,39.62 L23.65,40.59 L23.13,45.37 L20.38,46.90 L21.06,49.87 L22.62,52.98 L24.19,50.92 L28.71,49.56 L29.92,47.10 L32.93,46.87 Z", "centroid": [65.1, 38.3]}}};
+
+const REGIONS = ['北部','中部','南部','東部','離島'];
+const REGION_CLASS = {'北部':'r-north','中部':'r-central','南部':'r-south','東部':'r-east','離島':'r-island'};
+
+const DATA = [
+  {id:'taipei', name:'台北市', type:'直轄市', region:'北部',
+    tagline:'政治與金融的心臟,巷弄裡藏著百年老城故事。',
+    culture:'大稻埕見證清末開港的繁華,故宮博物院典藏華人文明瑰寶,西門町與東區則是次文化與流行的發源地,新舊城區在同一座城市裡並存。',
+    food:'牛肉麵是城市代表味道,永康街與士林夜市集結各省小吃,巷弄裡的傳統麵店與新式咖啡館比鄰而居。',
+    econ:'作為總部經濟核心,金融、科技服務業與新創聚落高度集中,信義計畫區是台灣最重要的商業與展演樞紐。'},
+  {id:'newtaipei', name:'新北市', type:'直轄市', region:'北部',
+    tagline:'環抱台北的衛星城市,山海礦業小鎮串成環狀風景線。',
+    culture:'九份、金瓜石留下日治礦業聚落的階梯街景,淡水老街見證西班牙、荷蘭到清代的多重殖民足跡,烏來則是泰雅族文化重鎮。',
+    food:'深坑臭豆腐、淡水阿給與鐵蛋、烏來竹筒飯,是沿著河谷與海岸線發展出的庶民小吃。',
+    econ:'人口最多的直轄市,傳統製造業逐漸轉型為影視文創、物流與智慧製造並重的產業結構。'},
+  {id:'keelung', name:'基隆市', type:'省轄市', region:'北部',
+    tagline:'多雨山海港城,廟口夜市的蒸氣從清晨飄到深夜。',
+    culture:'兩百年歷史的港口城市,砲台與燈塔訴說海防往事,和平島公園保留原住民與西班牙殖民遺跡。',
+    food:'廟口夜市的鼎邊趖、天婦羅與吉古拉,是最具代表性的港都小吃地圖。',
+    econ:'以漁港、貨櫃轉運與海洋觀光為主軸,近年積極發展郵輪母港與海洋科技產業。'},
+  {id:'taoyuan', name:'桃園市', type:'直轄市', region:'北部',
+    tagline:'國門之都,客家聚落與眷村記憶交織成移民城市。',
+    culture:'大溪老街的巴洛克牌樓、客家花布與眷村文化在此融合,是台灣族群多樣性最鮮明的縮影之一。',
+    food:'大溪豆干、黃日香豆花、忠貞市場的雲南米線,反映多元移民的飲食記憶。',
+    econ:'桃園國際機場帶動航空城發展,加上電子零組件與精密製造聚落,是北台灣重要的工業與物流重鎮。'},
+  {id:'hsinchucity', name:'新竹市', type:'省轄市', region:'北部',
+    tagline:'風城科技之都,老城牆與晶圓廠隔街相望。',
+    culture:'東門城與城隍廟見證清代竹塹城歷史,近年結合科技移民,形成傳統與創新並存的城市性格。',
+    food:'貢丸與米粉是新竹雙絕,城隍廟口小吃聚落也是老饕必訪之地。',
+    econ:'新竹科學園區為台灣半導體產業重鎮,聚集晶圓代工與IC設計龍頭企業。'},
+  {id:'hsinchucounty', name:'新竹縣', type:'縣', region:'北部',
+    tagline:'客家山城,老街與科學園區在丘陵間比鄰而居。',
+    culture:'內灣、北埔老街保留完整客家聚落樣貌,義民祭是全台規模最大的客家祭典之一。',
+    food:'客家粄條、擂茶與柿餅,是山城客家人代代相傳的味道。',
+    econ:'竹科周邊擴散效應帶動高科技產業聚落,同時保留茶葉與休閒農業經濟。'},
+  {id:'miaoli', name:'苗栗縣', type:'縣', region:'北部',
+    tagline:'客家桐花之鄉,山林間開滿五月雪。',
+    culture:'客家八音、油桐花季與藍染工藝,是苗栗最鮮明的文化標籤,詔安客語在此仍被使用。',
+    food:'客家小炒、薑絲大腸與柿餅,鹹香下飯的山城風味。',
+    econ:'以農業、觀光與陶瓷產業為主,近年結合文創推動地方創生。'},
+  {id:'taichung', name:'台中市', type:'直轄市', region:'中部',
+    tagline:'氣候溫和的文青城市,老建築與街頭藝術並存。',
+    culture:'宮原眼科等日治建築活化案例聞名全台,彩虹眷村用畫筆留住即將拆遷的記憶。',
+    food:'太陽餅、逢甲夜市與大甲奶油酥餅,甜鹹小吃版圖橫跨老城與新興商圈。',
+    econ:'精密機械與自行車產業(捷安特、美利達)重鎮,加上中科園區帶動半導體與光電製造。'},
+  {id:'changhua', name:'彰化縣', type:'縣', region:'中部',
+    tagline:'農業與傳統工藝大縣,鹿港古蹟街巷曲折依舊。',
+    culture:'鹿港保留清代開發史蹟與傳統工藝(木雕、燈籠),廟宇密度全台數一數二。',
+    food:'肉圓、爌肉飯與貓鼠麵,是彰化人日常最熟悉的味道。',
+    econ:'農業產值居全台前列,同時發展螺絲扣件、金屬加工等傳統製造業。'},
+  {id:'nantou', name:'南投縣', type:'縣', region:'中部',
+    tagline:'台灣唯一不靠海的縣,日月潭雲霧繚繞群山之間。',
+    culture:'日月潭是邵族傳統領域,九族文化村匯集原住民工藝與祭儀展演,埔里則是全台海拔最高的鎮。',
+    food:'埔里米粉、日月潭紅茶與高山茶,是山城孕育出的細緻風味。',
+    econ:'以觀光旅遊、高山茶與精緻農業為主,921地震後重建出多處生態旅遊亮點。'},
+  {id:'yunlin', name:'雲林縣', type:'縣', region:'中部',
+    tagline:'農業首都,平原上種出全台四分之一的蔬菜。',
+    culture:'北港朝天宮媽祖遶境是全台指標宗教盛事,西螺大橋見證濁水溪畔的開發史。',
+    food:'北港花生、西螺醬油與土豆仁湯,樸實濃郁的農村滋味。',
+    econ:'蔬菜、稻米與畜牧產值居全台前段班,近年推動農業科技與食品加工升級。'},
+  {id:'chiayicity', name:'嘉義市', type:'省轄市', region:'中部',
+    tagline:'木都小城,通往阿里山的門戶。',
+    culture:'日治時期木材業興盛留下大量檜木建築,森林之都的稱號由此而來。',
+    food:'火雞肉飯是嘉義代名詞,方塊酥、涼麵也是遊子返鄉必吃清單。',
+    econ:'以觀光轉運、農產加工與服務業為主,阿里山林鐵是重要觀光資產。'},
+  {id:'chiayicounty', name:'嘉義縣', type:'縣', region:'中部',
+    tagline:'阿里山雲海與濱海蚵田,山與海的縣境跨度極大。',
+    culture:'阿里山鄒族文化、林鐵五分車與日出雲海,是最具代表性的高山意象。',
+    food:'東石蚵仔、方塊酥發源地,山產與海鮮在同一縣境並陳。',
+    econ:'農林漁業並重,阿里山觀光與東石漁港養殖業是兩大經濟支柱。'},
+  {id:'tainan', name:'台南市', type:'直轄市', region:'南部',
+    tagline:'台灣古都,四百年府城歲月沉澱成滿街古蹟與甜味。',
+    culture:'赤崁樓、孔廟、安平古堡見證荷治、明鄭到清代的開發史,是台灣歷史最悠久的城市之一。',
+    food:'擔仔麵、棺材板、虱目魚粥,府城小吃偏甜,是移民與物產交織的味覺記憶。',
+    econ:'南部科學園區帶動半導體與精密機械產業,同時以文化觀光支撐龐大服務業經濟。'},
+  {id:'kaohsiung', name:'高雄市', type:'直轄市', region:'南部',
+    tagline:'港都工業城市,老倉庫化身藝術特區,港灣天際線正在改變。',
+    culture:'駁二藝術特區由舊倉庫改建,見證從重工業港都到文創城市的轉型歷程。',
+    food:'旗津海鮮、六合夜市與鹽埕區老店,鹹香濃郁的港都口味。',
+    econ:'台灣最大港口與重工業基地(鋼鐵、石化、造船),亞洲新灣區正推動軟體與會展產業轉型。'},
+  {id:'pingtung', name:'屏東縣', type:'縣', region:'南部',
+    tagline:'台灣最南端的熱帶縣份,恆春民謠隨海風飄揚。',
+    culture:'恆春古城與思想起民謠、排灣族與魯凱族的石板屋工藝,是南島文化的重要據點。',
+    food:'萬巒豬腳、東港黑鮪魚與檸檬鴨,南國物產成就重口味經典。',
+    econ:'熱帶農業(蓮霧、黑珍珠蓮霧、可可)與墾丁觀光是兩大經濟命脈。'},
+  {id:'yilan', name:'宜蘭縣', type:'縣', region:'東部',
+    tagline:'太平洋畔的多雨平原,傳統戲曲從這裡唱向全台。',
+    culture:'歌仔戲發源於宜蘭,國立傳統藝術中心保存台灣戲曲與工藝,河流沖積出的三角洲孕育純樸農村風貌。',
+    food:'蔥餅、鴨賞與糕渣,是宜蘭最具代表性的家常味道。',
+    econ:'雪隧通車後觀光快速發展,有機農業與休閒民宿經濟蓬勃,傳統漁業仍佔重要地位。'},
+  {id:'hualien', name:'花蓮縣', type:'縣', region:'東部',
+    tagline:'太魯閣峽谷與太平洋之間,原住民歌聲迴盪山海。',
+    culture:'太魯閣族、阿美族在此世代生活,豐年祭與部落工藝是最鮮明的文化資產,太魯閣峽谷是世界級地景。',
+    food:'花蓮薯、扁食與原住民風味料理(石板烤肉、剌蔥),融合山海食材。',
+    econ:'觀光是最主要產業,大理石與石礦加工曾是重要經濟支柱,近年轉向生態與慢活旅遊。'},
+  {id:'taitung', name:'台東縣', type:'縣', region:'東部',
+    tagline:'縱谷純樸,熱氣球升空俯瞰太平洋與海岸山脈。',
+    culture:'阿美族、卑南族、排灣族與達悟族文化薈萃,南島語族起源地之一,熱氣球嘉年華是年度盛事。',
+    food:'釋迦、洛神花與池上米,縱谷純淨物產成就在地飲食風格。',
+    econ:'以觀光農業與有機稻作為主,人口外流問題促使地方積極發展生態旅遊與地方創生。'},
+  {id:'penghu', name:'澎湖縣', type:'離島縣', region:'離島',
+    tagline:'玄武岩柱狀節理鋪成的離島群,夏季海風鹹而透明。',
+    culture:'玄武岩地景與傳統石滬漁法(菜宅、雙心石滬)是澎湖獨有的人與海共生智慧。',
+    food:'仙人掌冰、丁香魚與海鮮乾貨,鹹香帶點海的氣味。',
+    econ:'漁業與觀光並重,夏季國際海上花火節帶動觀光旺季經濟。'},
+  {id:'kinmen', name:'金門縣', type:'離島縣', region:'離島',
+    tagline:'昔日戰地前線,如今是閩南古厝與高粱田的靜謐島嶼。',
+    culture:'戰地文化(坑道、碉堡)與閩南傳統聚落(古厝、風獅爺)並存,見證兩岸關係的獨特歷史。',
+    food:'金門高粱酒、貢糖與廣東粥,是島上最具代表性的物產。',
+    econ:'觀光與酒業(金門酒廠)是兩大經濟命脈,近年推動免稅購物與兩岸小三通經濟。'},
+  {id:'lienchiang', name:'連江縣', type:'離島縣', region:'離島',
+    tagline:'馬祖列島,藍眼淚在夏夜的海面上發著微光。',
+    culture:'閩東建築(石頭屋)與媽祖信仰是馬祖文化核心,戰地坑道見證軍管時期歷史。',
+    food:'淡菜、馬祖老酒與繼光餅,海島限定的鹹香滋味。',
+    econ:'觀光(藍眼淚生態奇景)與漁業為主,近年積極發展生態旅遊延長觀光季節。'},
+];
+
+
+const TOWNSHIPS = {
+  taipei:['中正區','大同區','中山區','松山區','大安區','萬華區','信義區','士林區','北投區','內湖區','南港區','文山區'],
+  newtaipei:['板橋區','三重區','中和區','永和區','新莊區','新店區','樹林區','鶯歌區','三峽區','淡水區','汐止區','瑞芳區','土城區','蘆洲區','五股區','泰山區','林口區','深坑區','石碇區','坪林區','三芝區','石門區','八里區','平溪區','雙溪區','貢寮區','金山區','萬里區','烏來區'],
+  keelung:['中正區','七堵區','暖暖區','仁愛區','中山區','安樂區','信義區'],
+  taoyuan:['桃園區','中壢區','大溪區','楊梅區','蘆竹區','大園區','龜山區','八德區','龍潭區','平鎮區','新屋區','觀音區','復興區'],
+  hsinchucity:['東區','北區','香山區'],
+  hsinchucounty:['竹北市','竹東鎮','新埔鎮','關西鎮','湖口鄉','新豐鄉','芎林鄉','橫山鄉','北埔鄉','寶山鄉','峨眉鄉','尖石鄉','五峰鄉'],
+  miaoli:['苗栗市','苑裡鎮','通霄鎮','竹南鎮','頭份市','後龍鎮','卓蘭鎮','大湖鄉','公館鄉','銅鑼鄉','南庄鄉','頭屋鄉','三義鄉','西湖鄉','造橋鄉','三灣鄉','獅潭鄉','泰安鄉'],
+  taichung:['中區','東區','南區','西區','北區','北屯區','西屯區','南屯區','太平區','大里區','霧峰區','烏日區','豐原區','后里區','石岡區','東勢區','和平區','新社區','潭子區','大雅區','神岡區','大肚區','沙鹿區','龍井區','梧棲區','清水區','大甲區','外埔區','大安區'],
+  changhua:['彰化市','鹿港鎮','和美鎮','線西鄉','伸港鄉','福興鄉','秀水鄉','花壇鄉','芬園鄉','員林市','溪湖鎮','田中鎮','大村鄉','埔鹽鄉','埔心鄉','永靖鄉','社頭鄉','二水鄉','北斗鎮','二林鎮','田尾鄉','埤頭鄉','芳苑鄉','大城鄉','竹塘鄉','溪州鄉'],
+  nantou:['南投市','埔里鎮','草屯鎮','竹山鎮','集集鎮','名間鄉','鹿谷鄉','中寮鄉','魚池鄉','國姓鄉','水里鄉','信義鄉','仁愛鄉'],
+  yunlin:['斗六市','斗南鎮','虎尾鎮','西螺鎮','土庫鎮','北港鎮','古坑鄉','大埤鄉','莿桐鄉','林內鄉','二崙鄉','崙背鄉','麥寮鄉','東勢鄉','褒忠鄉','臺西鄉','元長鄉','四湖鄉','口湖鄉','水林鄉'],
+  chiayicity:['東區','西區'],
+  chiayicounty:['太保市','朴子市','布袋鎮','大林鎮','民雄鄉','溪口鄉','新港鄉','六腳鄉','東石鄉','義竹鄉','鹿草鄉','水上鄉','中埔鄉','竹崎鄉','梅山鄉','番路鄉','大埔鄉','阿里山鄉'],
+  tainan:['中西區','東區','南區','北區','安平區','安南區','永康區','歸仁區','新化區','左鎮區','玉井區','楠西區','南化區','仁德區','關廟區','龍崎區','官田區','麻豆區','佳里區','西港區','七股區','將軍區','學甲區','北門區','新營區','後壁區','白河區','東山區','六甲區','下營區','柳營區','鹽水區','善化區','大內區','山上區','新市區','安定區'],
+  kaohsiung:['新興區','前金區','苓雅區','鹽埕區','鼓山區','旗津區','前鎮區','三民區','楠梓區','小港區','左營區','仁武區','大社區','岡山區','路竹區','阿蓮區','田寮區','燕巢區','橋頭區','梓官區','彌陀區','永安區','湖內區','鳳山區','大寮區','林園區','鳥松區','大樹區','旗山區','美濃區','六龜區','內門區','杉林區','甲仙區','桃源區','那瑪夏區','茂林區','茄萣區'],
+  pingtung:['屏東市','潮州鎮','東港鎮','恆春鎮','萬丹鄉','長治鄉','麟洛鄉','九如鄉','里港鄉','鹽埔鄉','高樹鄉','萬巒鄉','內埔鄉','竹田鄉','新埤鄉','枋寮鄉','新園鄉','崁頂鄉','林邊鄉','南州鄉','佳冬鄉','琉球鄉','車城鄉','滿州鄉','枋山鄉','三地門鄉','霧臺鄉','瑪家鄉','泰武鄉','來義鄉','春日鄉','獅子鄉','牡丹鄉'],
+  yilan:['宜蘭市','羅東鎮','蘇澳鎮','頭城鎮','礁溪鄉','壯圍鄉','員山鄉','冬山鄉','五結鄉','三星鄉','大同鄉','南澳鄉'],
+  hualien:['花蓮市','鳳林鎮','玉里鎮','新城鄉','吉安鄉','壽豐鄉','光復鄉','豐濱鄉','瑞穗鄉','富里鄉','秀林鄉','萬榮鄉','卓溪鄉'],
+  taitung:['臺東市','成功鎮','關山鎮','卑南鄉','大武鄉','太麻里鄉','東河鄉','長濱鄉','鹿野鄉','池上鄉','綠島鄉','延平鄉','海端鄉','達仁鄉','金峰鄉','蘭嶼鄉'],
+  penghu:['馬公市','湖西鄉','白沙鄉','西嶼鄉','望安鄉','七美鄉'],
+  kinmen:['金城鎮','金湖鎮','金沙鎮','金寧鄉','烈嶼鄉','烏坵鄉'],
+  lienchiang:['南竿鄉','北竿鄉','莒光鄉','東引鄉']
+};
+
+
+const PLACES = {
+  taipei:[['國家公園','陽明山國家公園'],['風景／自然','貓空、象山、關渡自然公園'],['遊樂園','台北市立兒童新樂園'],['逛街','西門町、信義商圈、迪化街、士林夜市']],
+  newtaipei:[['國家公園','陽明山國家公園'],['風景區','東北角暨宜蘭海岸國家風景區、北海岸及觀音山國家風景區'],['自然景點','九份、金瓜石、野柳、淡水'],['逛街／老街','淡水老街、三峽老街、鶯歌老街']],
+  keelung:[['風景區','北海岸及觀音山國家風景區、和平島地質公園'],['海景','潮境公園、正濱漁港、外木山'],['逛街／美食','基隆廟口、義二路商圈']],
+  taoyuan:[['風景區','小烏來風景特定區、大溪周邊山城'],['遊樂園','小人國主題樂園、Xpark'],['逛街','大溪老街、華泰名品城、A8商圈']],
+  hsinchucity:[['風景／自然','十七公里海岸線、南寮漁港、青草湖'],['親子／休閒','新竹市立動物園、新竹公園'],['逛街','巨城購物中心、城隍廟商圈']],
+  hsinchucounty:[['國家公園','雪霸國家公園'],['風景／老街','內灣、北埔、五指山'],['遊樂園','六福村主題遊樂園、小叮噹科學主題樂園'],['逛街','竹北高鐵特區商圈、竹北遠百周邊']],
+  miaoli:[['國家公園','雪霸國家公園'],['風景區','三義木雕街、勝興車站、獅頭山風景區'],['遊樂園／休閒','尚順育樂世界、飛牛牧場'],['逛街','頭份尚順商圈、苗栗市區']],
+  taichung:[['國家公園','雪霸國家公園'],['風景區','參山國家風景區、東勢林場、武陵農場'],['遊樂園','麗寶樂園'],['逛街','逢甲夜市、一中街、勤美誠品綠園道']],
+  changhua:[['風景區','參山國家風景區（八卦山）'],['古蹟／景點','鹿港老街、八卦山大佛、扇形車庫'],['休閒','溪州公園、田尾公路花園'],['逛街／美食','鹿港老街、員林商圈']],
+  nantou:[['國家公園','玉山國家公園'],['風景區','日月潭國家風景區、參山國家風景區'],['遊樂園','九族文化村'],['風景／休閒','清境農場、溪頭自然教育園區、車埕']],
+  yunlin:[['風景／自然','草嶺風景區、古坑綠色隧道'],['親子／遊樂','劍湖山世界主題樂園'],['文化景點','北港老街、西螺老街、虎尾鐵橋'],['逛街／美食','斗六市區、北港朝天宮商圈']],
+  chiayicity:[['風景／文化','檜意森活村、森林之歌、嘉義公園'],['親子／休閒','嘉義市立美術館周邊、文化公園'],['逛街','文化路夜市、嘉義市區商圈']],
+  chiayicounty:[['風景區','阿里山國家風景區'],['自然景點','阿里山森林遊樂區、奮起湖、東石漁港'],['休閒／親子','旺萊山、綠盈牧場'],['逛街／老街','奮起湖老街、朴子市區']],
+  tainan:[['國家公園','台江國家公園'],['風景／自然','四草綠色隧道、井仔腳瓦盤鹽田、關子嶺'],['遊樂園','頑皮世界野生動物園'],['逛街','國華街、神農街、花園夜市、海安路']],
+  kaohsiung:[['國家自然公園','壽山國家自然公園'],['風景區','茂林國家風景區、愛河灣、西子灣'],['遊樂園','義大遊樂世界'],['逛街','駁二藝術特區、瑞豐夜市、漢神巨蛋商圈']],
+  pingtung:[['國家公園','墾丁國家公園'],['風景區','大鵬灣國家風景區、四重溪'],['休閒／親子','國立海洋生物博物館、小琉球'],['逛街／老街','恆春老街、東港華僑市場']],
+  yilan:[['風景區','東北角暨宜蘭海岸國家風景區'],['自然／休閒','太平山國家森林遊樂區、龜山島、冬山河親水公園'],['親子／文化','國立傳統藝術中心、蘭陽博物館'],['逛街','羅東夜市、宜蘭東門夜市']],
+  hualien:[['國家公園','太魯閣國家公園、玉山國家公園'],['風景／自然','太平洋海岸、七星潭、瑞穗溫泉'],['休閒','花蓮海洋公園、鯉魚潭'],['逛街','東大門夜市、花蓮市區']],
+  taitung:[['森林遊樂區','知本國家森林遊樂區'],['風景區','東部海岸國家風景區、花東縱谷國家風景區'],['休閒／親子','鹿野高台、池上伯朗大道、鐵花村'],['逛街／市區','台東市區、正氣路夜市']],
+  penghu:[['風景區','澎湖國家風景區'],['海島景點','七美雙心石滬、玄武岩地景、奎壁山'],['休閒','澎湖水族館、吉貝沙尾'],['逛街','馬公中央老街、天后宮周邊']],
+  kinmen:[['國家公園','金門國家公園'],['風景／文化','翟山坑道、莒光樓、獅山砲陣地、古寧頭'],['休閒','建功嶼、太湖周邊'],['逛街','金城鎮模範街、金湖新市里商圈']],
+  lienchiang:[['風景／自然','馬祖國家風景區、藍眼淚景點'],['文化景點','芹壁聚落、津沙聚落、戰地坑道'],['海島休閒','東引、莒光、北竿、南竿島嶼旅行'],['逛街／老街','南竿介壽獅子市場、山隴商圈']]
+};
+const INDIGENOUS = {
+  taipei:{intro:'台北市是多元族群匯聚的城市，也能在都市中看見原住民族文化、工藝與公共藝術。',groups:[],note:'可在市區的文化場館與展演活動認識不同族群的歷史與當代生活。'},
+  newtaipei:{intro:'新北市山區與溪谷保存泰雅族文化脈絡，烏來是重要的原住民族文化旅遊地。',groups:['泰雅族'],note:'烏來地區可認識泰雅族的部落文化、工藝、飲食與傳統生活。'},
+  taoyuan:{intro:'桃園是多族群移居城市，復興區是泰雅族重要的傳統生活區域。',groups:['泰雅族'],note:'復興區的部落、山林與溪谷景觀，和泰雅族生活文化密切相關。'},
+  hsinchucity:{intro:'新竹市是科技與傳統文化交會的城市，也有原住民族文化教育與展演。',groups:['賽夏族','泰雅族'],note:'新竹縣市周邊可進一步認識賽夏族與泰雅族的文化。'},
+  hsinchucounty:{intro:'新竹縣山區是泰雅族與賽夏族的重要生活領域，部落文化與山林環境密切相連。',groups:['賽夏族','泰雅族'],note:'五峰、尖石等山區可看見部落文化、傳統工藝與山林生活。'},
+  miaoli:{intro:'苗栗山區同時連結客家文化與原住民族文化，泰安、南庄一帶可見部落生活與山林文化。',groups:['泰雅族','賽夏族'],note:'賽夏族與泰雅族文化，是苗栗重要的原住民族文化資產。'},
+  taichung:{intro:'台中和平區位於中央山脈北段，是泰雅族重要的生活區域，山林文化與觀光交織。',groups:['泰雅族'],note:'和平區可認識部落文化、山林資源與傳統生活。'},
+  nantou:{intro:'南投是台灣原住民族文化的重要地區，邵族、布農族與泰雅族等在山林與湖泊間發展出不同文化。',groups:['邵族','布農族','泰雅族'],note:'日月潭周邊可認識邵族；信義、仁愛等山區則可接觸布農族與泰雅族文化。'},
+  chiayicity:{intro:'嘉義市是山林與平原交流的重要城市，也是前往阿里山認識原住民族文化的入口。',groups:['鄒族'],note:'可從嘉義市的文化場館與阿里山相關展演認識鄒族文化。'},
+  chiayicounty:{intro:'阿里山山區是鄒族的重要傳統生活領域，山林、祭儀、神話與茶產業共同構成地方特色。',groups:['鄒族'],note:'阿里山鄒族文化與山林生活密切相關，祭典與傳統工藝尤其具有代表性。'},
+  tainan:{intro:'台南是歷史與多元族群交會的城市，也有西拉雅族文化復振與相關文化場域。',groups:['西拉雅族'],note:'西拉雅族屬平埔族群，近年持續進行文化復振、語言與傳統記憶的保存。'},
+  kaohsiung:{intro:'高雄山區分布著布農族、排灣族與魯凱族等族群，山林、河川與部落文化形成鮮明特色。',groups:['布農族','排灣族','魯凱族'],note:'茂林、桃源、那瑪夏等山區是認識高雄原住民族文化的重要地點。'},
+  pingtung:{intro:'屏東是原住民族文化非常豐富的地區，排灣族與魯凱族在山區及丘陵地帶有深厚的文化傳統。',groups:['排灣族','魯凱族'],note:'三地門、霧台、瑪家、泰武、來義、春日、獅子、牡丹等地可深入認識部落文化。'},
+  yilan:{intro:'宜蘭山區是泰雅族重要的生活領域，溪谷、山林與部落文化共同形成地方特色。',groups:['泰雅族'],note:'大同、南澳等山區可認識泰雅族文化、工藝與山林生活。'},
+  hualien:{intro:'花蓮擁有非常多元的原住民族文化，阿美族、太魯閣族、布農族、撒奇萊雅族、噶瑪蘭族等都在此留下深厚文化脈絡。',groups:['阿美族','太魯閣族','布農族','撒奇萊雅族','噶瑪蘭族'],note:'豐年祭、部落工藝、傳統歌舞與山海環境，都是花蓮原住民族文化的重要特色。'},
+  taitung:{intro:'台東是台灣原住民族文化密度很高的地區，阿美族、卑南族、排灣族、布農族與達悟族等文化在山海之間並存。',groups:['阿美族','卑南族','排灣族','布農族','達悟族'],note:'卑南族年祭、阿美族豐年祭、排灣族部落文化，以及蘭嶼達悟族文化都很具代表性。'},
+  penghu:{intro:'澎湖以海洋文化與閩南聚落為主，原住民族文化較少直接分布於當地。',groups:[],note:'這裡以台灣整體原住民族文化作為背景介紹。'},
+  kinmen:{intro:'金門以閩南聚落、戰地文化與海島歷史為主，原住民族並非當地主要傳統族群。',groups:[],note:'這裡以台灣整體多元文化脈絡認識原住民族。'},
+  lienchiang:{intro:'馬祖以閩東文化、海洋生活與戰地記憶為主要特色，原住民族並非當地主要傳統族群。',groups:[],note:'這裡以台灣整體多元文化脈絡認識原住民族。'}
+};
+DATA.forEach(d=>{
+  d.places = PLACES[d.id] || [];
+  d.indigenous = INDIGENOUS[d.id] || {intro:'這個縣市可以從地方文化活動、展覽與教育場域認識台灣原住民族的多元文化。',groups:[],note:''};
+});
+
+
+const TRIBES = [
+  ['阿美族','東部','部落分布廣，豐年祭是重要文化活動。'],['泰雅族','north','織布、gaga與山林生活是重要文化脈絡。'],['排灣族','south','家族、階序、雕刻與小米文化具有代表性。'],['布農族','east','分布於中央山脈兩側，射耳祭與八部合音廣為人知。'],['卑南族','east','以部落組織、年祭與傳統文化聞名。'],['魯凱族','south','石板屋、百合花與部落祭儀具有鮮明特色。'],['鄒族','south','阿里山地區的重要原住民族，祭儀與山林文化密切。'],['賽夏族','north','矮靈祭是最具代表性的傳統祭儀之一。'],['雅美族','east','蘭嶼達悟文化與海洋生活密切相連。'],['邵族','central','日月潭周邊的重要原住民族，與湖泊文化緊密相關。'],['噶瑪蘭族','east','以語言、歌謠與文化復振展現族群認同。'],['太魯閣族','east','織布、祖靈與山林文化是重要傳統。'],['撒奇萊雅族','east','花蓮地區的重要族群，文化復振持續發展。'],['賽德克族','central','南投山區的重要族群，織布與文化記憶具有特色。'],['拉阿魯哇族','south','高雄山區的重要族群，祭儀與文化傳承具有特色。'],['卡那卡那富族','south','高雄山區的重要族群，持續推動文化與語言復振。']
+];
+const FOOD_CARDS = [
+  ['北部','台北','小籠包、牛肉麵、豆花','north'],['北部','新北','淡水阿給、九份芋圓、金山地瓜','north'],['中部','台中','太陽餅、珍珠奶茶、東泉臭豆腐','central'],['中部','彰化','肉圓、爌肉飯、鹿港小吃','central'],['中部','南投','日月潭茶、紹興酒香料理、埔里米粉','central'],['南部','台南','牛肉湯、虱目魚、肉燥飯','south'],['南部','高雄','鴨肉飯、海鮮、木瓜牛奶','south'],['南部','屏東','萬巒豬腳、東港黑鮪魚、恆春洋蔥','south'],['東部','宜蘭','蔥餅、鴨賞、糕渣','east'],['東部','花蓮','扁食、花蓮薯、原住民族風味料理','east'],['東部','台東','釋迦、池上米、洛神花','east'],['離島','澎湖','仙人掌冰、海鮮、丁香魚','island'],['離島','金門','貢糖、廣東粥、牛肉乾','island'],['離島','馬祖','繼光餅、淡菜、老酒料理','island']
+];
+const HIGHLIGHTS = DATA.map(d=>({name:d.name,region:d.region,culture:d.culture,food:d.food,econ:d.econ,places:(d.places||[]).slice(0,1).map(x=>x[1]).join('')}));
+
+function renderTribes(filter='all'){
+  const grid=document.getElementById('tribeGrid'); if(!grid)return;
+  grid.innerHTML='';
+  TRIBES.filter(t=>filter==='all'||t[1]===filter||((filter==='north')&&(t[1]==='central'))).forEach(t=>{
+    const el=document.createElement('button'); el.className='tribe-card';
+    el.innerHTML=`<b>${t[0]}</b><span>${t[2]}</span>`;
+    el.addEventListener('click',()=>{ const match=DATA.find(d=>d.indigenous && d.indigenous.groups.includes(t[0])); if(match)openPanel(match.id); });
+    grid.appendChild(el);
+  });
+}
+function renderFood(filter='all'){
+  const grid=document.getElementById('foodGrid'); if(!grid)return;
+  grid.innerHTML='';
+  FOOD_CARDS.filter(f=>filter==='all'||f[3]===filter).forEach(f=>{
+    const el=document.createElement('div'); el.className='explore-card';
+    el.innerHTML=`<span class="eyebrow">${f[0]}</span><h3>${f[1]}</h3><p>${f[2]}</p><div class="chip-row"><span class="chip">在地味道</span><span class="chip">地方飲食</span></div>`;
+    grid.appendChild(el);
+  });
+}
+function renderHighlights(){
+  const grid=document.getElementById('highlightGrid'); if(!grid)return;
+  HIGHLIGHTS.forEach(h=>{
+    const el=document.createElement('button'); el.className='explore-card'; el.style.textAlign='left'; el.style.cursor='pointer';
+    el.innerHTML=`<span class="eyebrow">${h.region}</span><h3>${h.name}</h3><p>${h.culture}</p><div class="chip-row"><span class="chip">🍜 ${h.food.slice(0,18)}${h.food.length>18?'…':''}</span>${h.places?`<span class="chip">📍 ${h.places}</span>`:''}</div>`;
+    el.addEventListener('click',()=>openPanel(DATA.find(d=>d.name===h.name).id));
+    grid.appendChild(el);
+  });
+}
+function setupExplorerFilters(id,render){
+  const box=document.getElementById(id); if(!box)return;
+  box.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{box.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render(btn.dataset.filter);}));
+}
+renderTribes(); renderFood(); renderHighlights();
+setupExplorerFilters('tribeFilters',renderTribes); setupExplorerFilters('foodFilters',renderFood);
+
+const DATA_BY_ID = Object.fromEntries(DATA.map(d=>[d.id,d]));
+
+// ---------- render main map ----------
+const pathsGroup = document.getElementById('countyPaths');
+Object.entries(TW_GEO.main.paths).forEach(([id, d])=>{
+  const meta = DATA_BY_ID[id];
+  if(!meta) return;
+  const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d', d);
+  p.setAttribute('class', 'county-path ' + REGION_CLASS[meta.region]);
+  p.setAttribute('tabindex','0');
+  p.setAttribute('role','button');
+  p.setAttribute('aria-label', meta.name);
+  p.dataset.id = id;
+  p.addEventListener('click', ()=>openPanel(id));
+  p.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPanel(id);} });
+  p.addEventListener('mouseenter', e=> setCaption(meta.name,e));
+  p.addEventListener('mousemove', e=> setCaption(meta.name,e));
+  p.addEventListener('focus', ()=> setCaption(meta.name));
+  p.addEventListener('mouseleave', ()=> setCaption(null));
+  pathsGroup.appendChild(p);
+});
+
+// ---------- render insets (kinmen / lienchiang) ----------
+const insetsEl = document.getElementById('insets');
+const INSET_LABELS = {kinmen:'金門縣', lienchiang:'馬祖(連江縣)'};
+Object.entries(TW_GEO.insets).forEach(([id, info])=>{
+  const meta = DATA_BY_ID[id];
+  const box = document.createElement('div');
+  box.className = 'inset-box';
+  box.setAttribute('tabindex','0');
+  box.setAttribute('role','button');
+  box.setAttribute('aria-label', meta.name);
+  box.innerHTML = `<svg viewBox="${info.viewBox}"><path class="inset-path" d="${info.path}"></path></svg><div class="lbl">${INSET_LABELS[id]}</div>`;
+  const path = box.querySelector('path');
+  path.dataset.id = id;
+  box.addEventListener('click', ()=>openPanel(id));
+  box.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPanel(id);} });
+  box.addEventListener('mouseenter', e=> setCaption(meta.name,e));
+  box.addEventListener('mousemove', e=> setCaption(meta.name,e));
+  box.addEventListener('mouseleave', ()=> setCaption(null));
+  insetsEl.appendChild(box);
+});
+
+const hoverCaption = document.getElementById('hoverCaption');
+const mapStage = document.querySelector('.map-stage');
+const mapTooltip = document.getElementById('mapTooltip');
+function setCaption(name, event){
+  hoverCaption.innerHTML = name ? `<b>${name}</b>` : '把游標移到地圖上,或點擊查看縣市介紹';
+  if(!name || !event){ mapTooltip.classList.remove('show'); return; }
+  mapTooltip.textContent = name;
+  const r = mapStage.getBoundingClientRect();
+  const x = Math.min(Math.max(event.clientX-r.left+14, 20), r.width-120);
+  const y = Math.min(Math.max(event.clientY-r.top-10, 25), r.height-25);
+  mapTooltip.style.left = x+'px';
+  mapTooltip.style.top = y+'px';
+  mapTooltip.classList.add('show');
+}
+
+// ---------- tabs + grid ----------
+const grid = document.getElementById('grid');
+const tabsEl = document.getElementById('tabs');
+let filterRegion = '全部';
+
+['全部', ...REGIONS].forEach(r=>{
+  const btn = document.createElement('button');
+  btn.textContent = r;
+  if(r===filterRegion) btn.classList.add('active');
+  btn.addEventListener('click', ()=>{
+    filterRegion = r;
+    [...tabsEl.children].forEach(b=>b.classList.toggle('active', b.textContent===r));
+    renderGrid();
+  });
+  tabsEl.appendChild(btn);
+});
+
+function renderGrid(){
+  grid.innerHTML = '';
+  const list = DATA.filter(d => filterRegion==='全部' || d.region===filterRegion);
+  list.forEach(d=>{
+    const card = document.createElement('button');
+    card.className = 'card';
+    card.innerHTML = `<span class="tag">${d.region} · ${d.type}</span><span class="name">${d.name}</span><span class="line">${d.tagline}</span>`;
+    card.addEventListener('click', ()=>openPanel(d.id));
+    grid.appendChild(card);
+  });
+}
+renderGrid();
+
+// ---------- panel ----------
+const panel = document.getElementById('panel');
+const scrim = document.getElementById('scrim');
+const panelHead = document.getElementById('panelHead');
+let activeId = null;
+
+const HEAD_COLORS = {
+  '北部':'linear-gradient(135deg,#2E6472,#123640)',
+  '中部':'linear-gradient(135deg,#4C7A5A,#2E4E3B)',
+  '南部':'linear-gradient(135deg,#B4703F,#7E4B26)',
+  '東部':'linear-gradient(135deg,#6E7F3E,#43501f)',
+  '離島':'linear-gradient(135deg,#C79A3B,#a3711f)'
+};
+
+let townshipTopo = null;
+let townshipLoadPromise = null;
+
+function normalizeAdminName(name=''){
+  return name.replaceAll('臺','台').replaceAll('台灣','臺灣').trim();
+}
+
+function loadTownshipTopo(){
+  if(townshipTopo) return Promise.resolve(townshipTopo);
+  if(!townshipLoadPromise){
+    townshipLoadPromise = fetch('https://cdn.jsdelivr.net/npm/taiwan-atlas/towns-mercator-10t.json')
+      .then(r=>{ if(!r.ok) throw new Error('township map download failed'); return r.json(); })
+      .then(data=>{ townshipTopo=data; return data; });
+  }
+  return townshipLoadPromise;
+}
+
+function renderTownshipMap(county){
+  const svg = d3.select('#townshipMap');
+  const tip = document.getElementById('townshipMapTip');
+  svg.selectAll('*').remove();
+  tip.classList.remove('show');
+
+  loadTownshipTopo().then(topo=>{
+    const all = topojson.feature(topo, topo.objects.towns);
+    const target = all.features.filter(f =>
+      normalizeAdminName(f.properties.COUNTYNAME) === normalizeAdminName(county.name)
+    );
+
+    if(!target.length){
+      svg.append('text').attr('x',180).attr('y',150)
+        .attr('text-anchor','middle').attr('class','township-fallback')
+        .text('找不到這個縣市的鄉鎮市區圖資');
+      return;
+    }
+
+    const collection = {type:'FeatureCollection',features:target};
+    const projection = d3.geoIdentity().fitExtent([[12,12],[348,298]], collection);
+    const path = d3.geoPath(projection);
+
+    const layer = svg.append('g');
+    layer.selectAll('path')
+      .data(target)
+      .join('path')
+      .attr('class','township-path')
+      .attr('d',path)
+      .attr('aria-label',f=>f.properties.TOWNNAME)
+      .on('mouseenter',function(event,f){
+        d3.select(this).classed('active',true);
+        showTownshipTip(event, f.properties.TOWNNAME);
+      })
+      .on('mousemove',function(event,f){ showTownshipTip(event, f.properties.TOWNNAME); })
+      .on('mouseleave',function(){
+        d3.select(this).classed('active',false);
+        tip.classList.remove('show');
+      });
+
+    layer.selectAll('text')
+      .data(target)
+      .join('text')
+      .attr('class','township-label')
+      .attr('x',f=>path.centroid(f)[0])
+      .attr('y',f=>path.centroid(f)[1])
+      .text(f=>f.properties.TOWNNAME.replace(/(區|鄉|鎮|市)$/,''));
+  }).catch(()=>{
+    svg.selectAll('*').remove();
+    const names = TOWNSHIPS[county.id] || [];
+    svg.append('text').attr('x',180).attr('y',145)
+      .attr('text-anchor','middle').attr('class','township-fallback')
+      .text('地圖載入失敗');
+    svg.append('text').attr('x',180).attr('y',170)
+      .attr('text-anchor','middle').attr('class','township-fallback')
+      .text(names.join(' · '));
+  });
+}
+
+function showTownshipTip(event,name){
+  const wrap=document.getElementById('townshipMapWrap');
+  const tip=document.getElementById('townshipMapTip');
+  const r=wrap.getBoundingClientRect();
+  tip.textContent=name;
+  tip.style.left=(event.clientX-r.left)+'px';
+  tip.style.top=(event.clientY-r.top)+'px';
+  tip.classList.add('show');
+}
+
+function openPanel(id){
+  const d = DATA_BY_ID[id];
+  if(!d) return;
+  activeId = id;
+
+  document.querySelectorAll('.county-path, .inset-path').forEach(m=>m.classList.toggle('active', m.dataset.id===id));
+
+  panelHead.style.background = HEAD_COLORS[d.region];
+  document.getElementById('pTag').textContent = `${d.region} · ${d.type}`;
+  document.getElementById('pName').textContent = d.name;
+  document.getElementById('pTagline').textContent = d.tagline;
+  document.getElementById('pCulture').textContent = d.culture;
+  document.getElementById('pFood').textContent = d.food;
+  document.getElementById('pEcon').textContent = d.econ;
+  document.getElementById('pIndigenous').textContent = d.indigenous.intro;
+  document.getElementById('pIndigenousGroups').innerHTML = d.indigenous.groups.length
+    ? d.indigenous.groups.map(g=>`<span class="indigenous-group">${g}</span>`).join('')
+    : '<span class="indigenous-group">地方族群資訊</span>';
+  document.getElementById('pIndigenousNote').textContent = d.indigenous.note || '';
+  const placesEl = document.getElementById('pPlaces');
+  placesEl.innerHTML = (d.places || []).map(([cat, items]) => `<div class="place-group"><strong>${cat}</strong><span>${items}</span></div>`).join('');
+  renderTownshipMap(d);
+
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+  scrim.classList.add('open');
+}
+
+function closePanel(){
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden','true');
+  scrim.classList.remove('open');
+  document.querySelectorAll('.county-path, .inset-path').forEach(m=>m.classList.remove('active'));
+  activeId = null;
+}
+
+document.getElementById('closeBtn').addEventListener('click', closePanel);
+scrim.addEventListener('click', closePanel);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); });
+document.getElementById('prevBtn').addEventListener('click', ()=>step(-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>step(1));
+function step(dir){
+  if(!activeId) return;
+  const idx = DATA.findIndex(d=>d.id===activeId);
+  const next = (idx + dir + DATA.length) % DATA.length;
+  openPanel(DATA[next].id);
+}
+</script>
+</body>
+</html>
