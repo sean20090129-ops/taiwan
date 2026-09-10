@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣 3D 地形探索 - Cesium</title>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <title>台灣 3D 地形探索</title>
   <style>
     * { box-sizing: border-box; }
     html, body {
@@ -16,10 +14,8 @@
       font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
       background: #dfe8dc;
     }
-    #cesiumContainer {
-      width: 100%;
-      height: 100%;
-    }
+    #app { width: 100%; height: 100%; position: relative; }
+    canvas { display: block; }
     .panel {
       position: absolute;
       left: 20px;
@@ -44,6 +40,18 @@
       color: #657064;
       margin-bottom: 14px;
     }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 9px 0;
+      font-size: 14px;
+      color: #354338;
+    }
+    input[type=range] {
+      width: 140px;
+      accent-color: #547b58;
+    }
     button {
       width: 100%;
       border: 0;
@@ -54,13 +62,23 @@
       color: white;
       font-size: 14px;
       cursor: pointer;
-      transition: filter 0.15s;
     }
-    button:hover {
-      filter: brightness(1.08);
+    button:hover { filter: brightness(1.07); }
+    button.secondary { background: #6b7f6e; }
+    .legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #5f675f;
     }
-    button.secondary {
-      background: #6b7f6e;
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
     }
     .hint {
       position: absolute;
@@ -79,148 +97,298 @@
       margin-top: 12px;
       line-height: 1.5;
     }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #dfe8dc;
+      color: #354338;
+      font-size: 18px;
+      z-index: 20;
+    }
   </style>
 </head>
 <body>
-  <div id="cesiumContainer"></div>
+  <div id="app">
+    <div id="loading">正在建立台灣 3D 地形…</div>
 
-  <div class="panel">
-    <h1>⛰️ 台灣 3D 地形</h1>
-    <div class="sub">真實地形 · 以台灣為主 · 可旋轉縮放</div>
-    
-    <button onclick="flyToTaiwan()">定位到台灣全景</button>
-    <button class="secondary" onclick="flyToYushan()">飛到玉山</button>
-    <button class="secondary" onclick="flyToTaipei()">飛到台北</button>
-    <button class="secondary" onclick="flyToKenting()">飛到墾丁</button>
+    <div class="panel">
+      <h1>⛰️ 台灣 3D 地形</h1>
+      <div class="sub">加強版程序化地形 · 以台灣為主 · 可旋轉縮放</div>
 
-    <div class="credit">
-      滑鼠左鍵：旋轉　｜　滾輪：縮放<br>
-      右鍵：平移　｜　範圍已限制在台灣附近
+      <div class="row">
+        <span>地形高度</span>
+        <input id="height" type="range" min="0.6" max="2.4" step="0.1" value="1.4">
+      </div>
+      <div class="row">
+        <span>山脈細節</span>
+        <input id="detail" type="range" min="1" max="5" step="1" value="3">
+      </div>
+
+      <button id="reset">定位到台灣全景</button>
+      <button class="secondary" id="toggleWire">顯示 / 隱藏網格</button>
+
+      <div class="legend">
+        <div><span class="dot" style="background:#a9b889"></span>平原</div>
+        <div><span class="dot" style="background:#78966e"></span>丘陵</div>
+        <div><span class="dot" style="background:#54775a"></span>山區</div>
+        <div><span class="dot" style="background:#c7b98b"></span>高山</div>
+      </div>
+
+      <div class="credit">
+        左鍵旋轉　｜　滾輪縮放　｜　右鍵平移<br>
+        範圍已鎖定在台灣
+      </div>
     </div>
+
+    <div class="hint">🖱️ 拖曳旋轉　🔍 滾輪縮放　✋ 右鍵平移</div>
   </div>
 
-  <div class="hint">🖱️ 拖曳旋轉　🔍 滾輪縮放　✋ 右鍵平移</div>
-
-  <script>
-    // ========== 請換成你的 Cesium Ion Access Token ==========
-    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Imlud2RyR25ZUnNmMjNDeEIiLCJqdGkiOiIzOWExMmFmYi1jZGZjLTQ3NTQtODYzNy01MDQyN2Y0YWJkZjIiLCJpZCI6NDg3MTU0LCJzdWIiOiJzZWFuMjAwOTAxMjktb3BzIiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IjEiLCJpYXQiOjE3ODkwNTEwNDl9.qTlH1FhnoiFFheSfDkQ2xABUfqspFdHjIrgH5lrOgPI';
-    // ========================================================
-
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      terrain: Cesium.Terrain.fromWorldTerrain(),
-      animation: false,
-      timeline: false,
-      baseLayerPicker: false,
-      geocoder: false,
-      homeButton: false,
-      sceneModePicker: false,
-      navigationHelpButton: false,
-      fullscreenButton: false,
-      infoBox: true,
-      selectionIndicator: true
-    });
-
-    // 限制相機距離，避免拉太遠看到整個東亞
-    const controller = viewer.scene.screenSpaceCameraController;
-    controller.minimumZoomDistance = 600;        // 最近距離
-    controller.maximumZoomDistance = 780000;     // 最遠距離（大約全台可視）
-    controller.enableCollisionDetection = true;
-
-    // ========== 核心：真正以台灣為中心的視角 ==========
-    function flyToTaiwan() {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(120.97, 23.65, 520000), // 高度調低，台灣會比較大
-        orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-48),
-          roll: 0
-        },
-        duration: 1.5
-      });
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
     }
+  }
+  </script>
 
-    // 一進來就定位到台灣
-    viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(120.97, 23.65, 520000),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-48),
-        roll: 0
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const loading = document.getElementById('loading');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdfe8dc);
+    scene.fog = new THREE.Fog(0xdfe8dc, 40, 120);
+
+    const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 500);
+    camera.position.set(0, 28, 32);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 12;
+    controls.maxDistance = 70;
+    controls.maxPolarAngle = Math.PI * 0.48;
+    controls.target.set(0, 0, 0);
+
+    // 燈光
+    scene.add(new THREE.HemisphereLight(0xf8f4df, 0x53634e, 1.6));
+    const sun = new THREE.DirectionalLight(0xfff2cf, 2.4);
+    sun.position.set(-18, 35, 20);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    scene.add(sun);
+    const fill = new THREE.DirectionalLight(0xcfe2ff, 0.55);
+    fill.position.set(25, 12, -18);
+    scene.add(fill);
+
+    // 台灣輪廓（正規化座標）
+    const outline = [
+      [-0.46,-1.00],[-0.22,-0.94],[0.00,-0.82],[0.20,-0.65],[0.36,-0.42],
+      [0.46,-0.12],[0.51,0.20],[0.48,0.50],[0.36,0.75],[0.16,0.94],
+      [-0.04,1.02],[-0.22,0.97],[-0.38,0.84],[-0.50,0.62],[-0.58,0.34],
+      [-0.61,0.04],[-0.58,-0.28],[-0.53,-0.60]
+    ];
+
+    function insidePoly(x, z) {
+      let inside = false;
+      for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+        const xi = outline[i][0], zi = outline[i][1];
+        const xj = outline[j][0], zj = outline[j][1];
+        const intersect = ((zi > z) !== (zj > z)) &&
+          (x < (xj - xi) * (z - zi) / (zj - zi) + xi);
+        if (intersect) inside = !inside;
       }
-    });
-
-    function flyToYushan() {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(120.9595, 23.4700, 16000),
-        orientation: {
-          heading: Cesium.Math.toRadians(25),
-          pitch: Cesium.Math.toRadians(-28),
-          roll: 0
-        },
-        duration: 2.0
-      });
+      return inside;
     }
 
-    function flyToTaipei() {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(121.5654, 25.0330, 22000),
-        orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-35),
-          roll: 0
-        },
-        duration: 1.8
-      });
+    // 更接近真實的高度場
+    function terrainHeight(x, z, detail = 3) {
+      // 中央山脈主脊（略偏東）
+      const ridge = Math.exp(-Math.pow((x - 0.06) / 0.22, 2));
+      // 玉山一帶
+      const yushan = 0.55 * Math.exp(-((x - 0.04) ** 2 + (z + 0.28) ** 2) / 0.028);
+      // 雪山 / 北段
+      const snow = 0.28 * Math.exp(-((x - 0.08) ** 2 + (z - 0.42) ** 2) / 0.04);
+      // 南段延續
+      const south = 0.22 * Math.exp(-((x - 0.02) ** 2 + (z + 0.55) ** 2) / 0.05);
+      // 東側較陡
+      const eastBoost = Math.max(0, (x + 0.05) * 0.45);
+      // 西側平原壓低
+      const westPlain = 0.55 + 0.45 * Math.exp(-Math.pow((x + 0.38) / 0.32, 2));
+      // 細節噪聲
+      const noise =
+        Math.sin(z * 11 + x * 3.2) * 0.06 +
+        Math.sin(z * 23 - x * 9) * 0.03 +
+        Math.cos(x * 18 + z * 6) * 0.02;
+
+      let h = 0.10 + 0.95 * ridge + yushan + snow + south + eastBoost * 0.25 + noise * detail;
+      h *= westPlain;
+      return Math.max(0.05, h);
     }
 
-    function flyToKenting() {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(120.796, 21.948, 16000),
-        orientation: {
-          heading: Cesium.Math.toRadians(10),
-          pitch: Cesium.Math.toRadians(-30),
-          roll: 0
-        },
-        duration: 2.0
-      });
+    let terrainGroup = new THREE.Group();
+    scene.add(terrainGroup);
+    let terrainMesh, wireMesh;
+    let heightScale = 1.4;
+    let detailLevel = 3;
+
+    function buildTerrain() {
+      if (terrainMesh) terrainGroup.remove(terrainMesh);
+      if (wireMesh) terrainGroup.remove(wireMesh);
+
+      const N = 160;
+      const sizeX = 16;
+      const sizeZ = 32;
+      const positions = [];
+      const colors = [];
+      const indices = [];
+      const grid = [];
+      const color = new THREE.Color();
+
+      for (let iz = 0; iz <= N; iz++) {
+        const row = [];
+        const z = (iz / N - 0.5) * 2.15;
+        for (let ix = 0; ix <= N; ix++) {
+          const x = (ix / N - 0.5) * 1.28;
+          const inP = insidePoly(x, z);
+          let y = -0.4;
+          if (inP) y = terrainHeight(x, z, detailLevel) * heightScale;
+
+          row.push(positions.length / 3);
+          positions.push(x * sizeX, y, z * sizeZ);
+
+          const h = Math.max(0, y + 0.4);
+          if (!inP) color.set(0xdfe8dc);
+          else if (h < 0.35) color.set(0xa9b889);      // 平原
+          else if (h < 0.75) color.set(0x78966e);      // 丘陵
+          else if (h < 1.35) color.set(0x54775a);      // 山區
+          else color.set(0xc7b98b);                     // 高山
+
+          colors.push(color.r, color.g, color.b);
+        }
+        grid.push(row);
+      }
+
+      for (let iz = 0; iz < N; iz++) {
+        for (let ix = 0; ix < N; ix++) {
+          const a = grid[iz][ix], b = grid[iz][ix + 1];
+          const c = grid[iz + 1][ix], d = grid[iz + 1][ix + 1];
+          indices.push(a, c, b, b, c, d);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+
+      terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.9,
+        metalness: 0.02,
+        side: THREE.DoubleSide
+      }));
+      terrainMesh.castShadow = true;
+      terrainMesh.receiveShadow = true;
+      terrainGroup.add(terrainMesh);
+
+      wireMesh = new THREE.LineSegments(
+        new THREE.WireframeGeometry(geo),
+        new THREE.LineBasicMaterial({ color: 0x334a38, transparent: true, opacity: 0.15 })
+      );
+      wireMesh.visible = false;
+      terrainGroup.add(wireMesh);
     }
 
-    // ========== 景點標記 ==========
+    buildTerrain();
+
+    // 海面
+    const sea = new THREE.Mesh(
+      new THREE.CircleGeometry(28, 96),
+      new THREE.MeshStandardMaterial({
+        color: 0xb9d2cf,
+        roughness: 1,
+        transparent: true,
+        opacity: 0.7
+      })
+    );
+    sea.rotation.x = -Math.PI / 2;
+    sea.position.y = -0.45;
+    scene.add(sea);
+
+    // 海岸線
+    const pts = outline.map(([x, z]) => new THREE.Vector3(x * 16, 0.05, z * 32));
+    pts.push(pts[0].clone());
+    const coast = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: 0x31473a })
+    );
+    scene.add(coast);
+
+    // 景點標記（簡化版）
     const places = [
-      { name: '玉山', lon: 120.9595, lat: 23.4700, height: 3952, color: Cesium.Color.ORANGE },
-      { name: '台北101', lon: 121.5645, lat: 25.0330, height: 500, color: Cesium.Color.CYAN },
-      { name: '阿里山', lon: 120.8000, lat: 23.5080, height: 2200, color: Cesium.Color.LIME },
-      { name: '太魯閣', lon: 121.6050, lat: 24.1580, height: 800, color: Cesium.Color.YELLOW },
-      { name: '日月潭', lon: 120.9100, lat: 23.8500, height: 800, color: Cesium.Color.DODGERBLUE },
-      { name: '墾丁', lon: 120.7960, lat: 21.9480, height: 200, color: Cesium.Color.HOTPINK },
-      { name: '九份', lon: 121.8430, lat: 25.1090, height: 400, color: Cesium.Color.MEDIUMPURPLE },
-      { name: '台東池上', lon: 121.2150, lat: 23.1220, height: 300, color: Cesium.Color.GOLD }
+      { name: '玉山', x: 0.6, z: -6.5, color: 0xff8c00 },
+      { name: '台北', x: 4.5, z: 14.5, color: 0x00bcd4 },
+      { name: '阿里山', x: -1.2, z: -4.8, color: 0x8bc34a },
+      { name: '日月潭', x: 0.8, z: -2.2, color: 0x2196f3 },
+      { name: '墾丁', x: -1.5, z: -18.5, color: 0xe91e63 }
     ];
 
     places.forEach(p => {
-      viewer.entities.add({
-        name: p.name,
-        position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.height),
-        point: {
-          pixelSize: 11,
-          color: p.color,
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
-        },
-        label: {
-          text: p.name,
-          font: '14px "Noto Sans TC", sans-serif',
-          pixelOffset: new Cesium.Cartesian2(0, -18),
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 3,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY
-        }
-      });
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 12, 12),
+        new THREE.MeshStandardMaterial({ color: p.color, emissive: p.color, emissiveIntensity: 0.25 })
+      );
+      marker.position.set(p.x, 2.2, p.z);
+      terrainGroup.add(marker);
     });
+
+    // 控制
+    document.getElementById('height').addEventListener('input', e => {
+      heightScale = +e.target.value;
+      buildTerrain();
+    });
+    document.getElementById('detail').addEventListener('input', e => {
+      detailLevel = +e.target.value;
+      buildTerrain();
+    });
+    document.getElementById('toggleWire').addEventListener('click', () => {
+      wireMesh.visible = !wireMesh.visible;
+    });
+    document.getElementById('reset').addEventListener('click', () => {
+      camera.position.set(0, 28, 32);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    loading.remove();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
   </script>
 </body>
 </html>
