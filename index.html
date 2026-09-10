@@ -86,7 +86,7 @@
 
   <div class="panel">
     <h1>⛰️ 台灣 3D 地形</h1>
-    <div class="sub">真實地形 · 僅限台灣範圍 · 可旋轉縮放</div>
+    <div class="sub">真實地形 · 以台灣為主 · 可旋轉縮放</div>
     
     <button onclick="flyToTaiwan()">定位到台灣全景</button>
     <button class="secondary" onclick="flyToYushan()">飛到玉山</button>
@@ -95,7 +95,7 @@
 
     <div class="credit">
       滑鼠左鍵：旋轉　｜　滾輪：縮放<br>
-      右鍵：平移　｜　範圍已限制在台灣
+      右鍵：平移　｜　範圍已限制在台灣附近
     </div>
   </div>
 
@@ -103,16 +103,8 @@
 
   <script>
     // ========== 請換成你的 Cesium Ion Access Token ==========
-    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Imlud2RyR25ZUnNmMjNDeEIiLCJqdGkiOiIzOWExMmFmYi1jZGZjLTQ3NTQtODYzNy01MDQyN2Y0YWJkZjIiLCJpZCI6NDg3MTU0LCJzdWIiOiJzZWFuMjAwOTAxMjktb3BzIiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IjEiLCJpYXQiOjE3ODkwNTEwNDl9.qTlH1FhnoiFFheSfDkQ2xABUfqspFdHjIrgH5lrOgPI';
+    Cesium.Ion.defaultAccessToken = 'YOUR_ACCESS_TOKEN';
     // ========================================================
-
-    // 台灣大致範圍（經緯度）
-    const TAIWAN_RECTANGLE = Cesium.Rectangle.fromDegrees(
-      119.3,   // 西
-      21.7,    // 南
-      122.1,   // 東
-      25.4     // 北
-    );
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
       terrain: Cesium.Terrain.fromWorldTerrain(),
@@ -128,44 +120,41 @@
       selectionIndicator: true
     });
 
-    // 限制相機只能在台灣附近活動
+    // 限制相機距離，避免拉太遠看到整個東亞
     const controller = viewer.scene.screenSpaceCameraController;
-    controller.minimumZoomDistance = 800;          // 最近不能太近
-    controller.maximumZoomDistance = 1800000;      // 最遠不能拉太遠（大概全台可視）
+    controller.minimumZoomDistance = 600;        // 最近距離
+    controller.maximumZoomDistance = 780000;     // 最遠距離（大約全台可視）
     controller.enableCollisionDetection = true;
 
-    // 限制平移範圍（大致鎖在台灣）
-    viewer.camera.constrainedAxis = Cesium.Cartesian3.UNIT_Z;
+    // ========== 核心：真正以台灣為中心的視角 ==========
+    function flyToTaiwan() {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(120.97, 23.65, 520000), // 高度調低，台灣會比較大
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-48),
+          roll: 0
+        },
+        duration: 1.5
+      });
+    }
 
-    // 初始飛到台灣
+    // 一進來就定位到台灣
     viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(121.0, 23.6, 950000),
+      destination: Cesium.Cartesian3.fromDegrees(120.97, 23.65, 520000),
       orientation: {
         heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-45),
+        pitch: Cesium.Math.toRadians(-48),
         roll: 0
       }
     });
 
-    // ========== 飛航函式 ==========
-    function flyToTaiwan() {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(121.0, 23.6, 950000),
-        orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-45),
-          roll: 0
-        },
-        duration: 1.6
-      });
-    }
-
     function flyToYushan() {
       viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(120.9595, 23.4700, 18000),
+        destination: Cesium.Cartesian3.fromDegrees(120.9595, 23.4700, 16000),
         orientation: {
-          heading: Cesium.Math.toRadians(30),
-          pitch: Cesium.Math.toRadians(-25),
+          heading: Cesium.Math.toRadians(25),
+          pitch: Cesium.Math.toRadians(-28),
           roll: 0
         },
         duration: 2.0
@@ -174,7 +163,7 @@
 
     function flyToTaipei() {
       viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(121.5654, 25.0330, 25000),
+        destination: Cesium.Cartesian3.fromDegrees(121.5654, 25.0330, 22000),
         orientation: {
           heading: Cesium.Math.toRadians(0),
           pitch: Cesium.Math.toRadians(-35),
@@ -186,7 +175,7 @@
 
     function flyToKenting() {
       viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(120.796, 21.948, 18000),
+        destination: Cesium.Cartesian3.fromDegrees(120.796, 21.948, 16000),
         orientation: {
           heading: Cesium.Math.toRadians(10),
           pitch: Cesium.Math.toRadians(-30),
@@ -196,7 +185,7 @@
       });
     }
 
-    // ========== 加入幾個代表性文化 / 景點標記 ==========
+    // ========== 景點標記 ==========
     const places = [
       { name: '玉山', lon: 120.9595, lat: 23.4700, height: 3952, color: Cesium.Color.ORANGE },
       { name: '台北101', lon: 121.5645, lat: 25.0330, height: 500, color: Cesium.Color.CYAN },
@@ -231,13 +220,6 @@
           disableDepthTestDistance: Number.POSITIVE_INFINITY
         }
       });
-    });
-
-    // 點擊實體時顯示名稱（簡單版）
-    viewer.selectedEntityChanged.addEventListener(function(entity) {
-      if (Cesium.defined(entity) && entity.name) {
-        console.log('選中：', entity.name);
-      }
     });
   </script>
 </body>
