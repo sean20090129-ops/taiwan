@@ -3,392 +3,285 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣 3D 地形探索</title>
+  <title>台灣智慧文化旅遊推薦</title>
   <style>
     * { box-sizing: border-box; }
-    html, body {
+    body {
       margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
       font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-      background: #dfe8dc;
+      background: #f4f7f2;
+      color: #2c3a2f;
     }
-    #app { width: 100%; height: 100%; position: relative; }
-    canvas { display: block; }
-    .panel {
-      position: absolute;
-      left: 20px;
-      top: 20px;
-      width: 300px;
-      padding: 18px 20px 16px;
-      border-radius: 20px;
-      background: rgba(250, 248, 239, 0.93);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 12px 35px rgba(50, 60, 45, 0.18);
-      border: 1px solid rgba(80, 90, 70, 0.15);
-      z-index: 10;
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 24px 18px 40px;
     }
     h1 {
-      font-size: 21px;
+      font-size: 24px;
       margin: 0 0 6px;
-      color: #26372d;
     }
     .sub {
-      font-size: 13px;
-      line-height: 1.55;
       color: #657064;
-      margin-bottom: 14px;
-    }
-    .row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 9px 0;
       font-size: 14px;
-      color: #354338;
+      margin-bottom: 22px;
     }
-    input[type=range] {
-      width: 140px;
-      accent-color: #547b58;
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(50,70,50,.08);
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 12px 0 6px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cfd8cb;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fbfcf9;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #b7c7b0;
+      background: #f3f7f0;
+      cursor: pointer;
+      font-size: 13px;
+      user-select: none;
+    }
+    .chip.active {
+      background: #547b58;
+      color: #fff;
+      border-color: #547b58;
     }
     button {
       width: 100%;
+      margin-top: 16px;
+      padding: 12px;
       border: 0;
       border-radius: 12px;
-      padding: 10px;
-      margin-top: 7px;
       background: #547b58;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
       cursor: pointer;
     }
-    button:hover { filter: brightness(1.07); }
-    button.secondary { background: #6b7f6e; }
-    .legend {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 12px;
-      font-size: 12px;
-      color: #5f675f;
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
-    .dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 5px;
+    #result {
+      white-space: pre-wrap;
+      line-height: 1.7;
+      font-size: 14.5px;
     }
     .hint {
-      position: absolute;
-      right: 20px;
-      bottom: 18px;
-      padding: 10px 14px;
-      border-radius: 14px;
-      background: rgba(250, 248, 239, 0.85);
-      color: #566158;
-      font-size: 13px;
-      z-index: 10;
+      font-size: 12px;
+      color: #7a877a;
+      margin-top: 8px;
     }
-    .credit {
-      font-size: 11px;
-      color: #879087;
-      margin-top: 12px;
-      line-height: 1.5;
-    }
-    #loading {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #dfe8dc;
-      color: #354338;
-      font-size: 18px;
-      z-index: 20;
+    .api-box {
+      background: #fff8e8;
+      border: 1px solid #f0e0b0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div id="loading">正在建立台灣 3D 地形…</div>
+  <div class="container">
+    <h1>🇹🇼 台灣智慧文化旅遊推薦</h1>
+    <div class="sub">服務觀光客與旅行社 · 依興趣推薦景點（OpenAI）</div>
 
-    <div class="panel">
-      <h1>⛰️ 台灣 3D 地形</h1>
-      <div class="sub">加強版程序化地形 · 以台灣為主 · 可旋轉縮放</div>
-
-      <div class="row">
-        <span>地形高度</span>
-        <input id="height" type="range" min="0.6" max="2.4" step="0.1" value="1.4">
-      </div>
-      <div class="row">
-        <span>山脈細節</span>
-        <input id="detail" type="range" min="1" max="5" step="1" value="3">
-      </div>
-
-      <button id="reset">定位到台灣全景</button>
-      <button class="secondary" id="toggleWire">顯示 / 隱藏網格</button>
-
-      <div class="legend">
-        <div><span class="dot" style="background:#a9b889"></span>平原</div>
-        <div><span class="dot" style="background:#78966e"></span>丘陵</div>
-        <div><span class="dot" style="background:#54775a"></span>山區</div>
-        <div><span class="dot" style="background:#c7b98b"></span>高山</div>
-      </div>
-
-      <div class="credit">
-        左鍵旋轉　｜　滾輪縮放　｜　右鍵平移<br>
-        範圍已鎖定在台灣
-      </div>
+    <div class="api-box">
+      <label>OpenAI API Key（只在本機使用，不會上傳到其他伺服器）</label>
+      <input id="apiKey" type="password" placeholder="sk-...">
+      <div class="hint">建議先用 gpt-4o-mini，性價比高</div>
     </div>
 
-    <div class="hint">🖱️ 拖曳旋轉　🔍 滾輪縮放　✋ 右鍵平移</div>
+    <div class="card">
+      <label>興趣主題（可多選）</label>
+      <div class="chips" id="interestChips">
+        <div class="chip" data-value="原住民文化">原住民文化</div>
+        <div class="chip" data-value="客家文化">客家文化</div>
+        <div class="chip" data-value="歷史文化">歷史文化</div>
+        <div class="chip" data-value="自然景觀">自然景觀</div>
+        <div class="chip" data-value="美食體驗">美食體驗</div>
+        <div class="chip" data-value="慢活 hidden">慢活</div>
+        <div class="chip" data-value="手作體驗">手作體驗</div>
+      </div>
+
+      <label>天數</label>
+      <select id="days">
+        <option value="1">1 天</option>
+        <option value="2" selected>2 天</option>
+        <option value="3">3 天</option>
+      </select>
+
+      <label>同行對象</label>
+      <select id="companions">
+        <option value="一般旅客">一般旅客</option>
+        <option value="情侶">情侶</option>
+        <option value="家庭（含小孩）">家庭（含小孩）</option>
+        <option value="長者">長者</option>
+        <option value="旅行社團體">旅行社團體</option>
+      </select>
+
+      <label>偏好區域（可選）</label>
+      <select id="region">
+        <option value="不限">不限</option>
+        <option value="北部">北部</option>
+        <option value="中部">中部</option>
+        <option value="南部">南部</option>
+        <option value="東部">東部</option>
+      </select>
+
+      <label>補充需求（可選）</label>
+      <textarea id="extra" rows="2" placeholder="例如：不要太操、想要有文化體驗、方便停車…"></textarea>
+
+      <button id="btn">產生推薦</button>
+    </div>
+
+    <div class="card">
+      <label>推薦結果</label>
+      <div id="result">尚未產生推薦</div>
+    </div>
   </div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
-
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-    const loading = document.getElementById('loading');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdfe8dc);
-    scene.fog = new THREE.Fog(0xdfe8dc, 40, 120);
-
-    const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 500);
-    camera.position.set(0, 28, 32);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    document.getElementById('app').appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
-    controls.minDistance = 12;
-    controls.maxDistance = 70;
-    controls.maxPolarAngle = Math.PI * 0.48;
-    controls.target.set(0, 0, 0);
-
-    // 燈光
-    scene.add(new THREE.HemisphereLight(0xf8f4df, 0x53634e, 1.6));
-    const sun = new THREE.DirectionalLight(0xfff2cf, 2.4);
-    sun.position.set(-18, 35, 20);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xcfe2ff, 0.55);
-    fill.position.set(25, 12, -18);
-    scene.add(fill);
-
-    // 台灣輪廓（正規化座標）
-    const outline = [
-      [-0.46,-1.00],[-0.22,-0.94],[0.00,-0.82],[0.20,-0.65],[0.36,-0.42],
-      [0.46,-0.12],[0.51,0.20],[0.48,0.50],[0.36,0.75],[0.16,0.94],
-      [-0.04,1.02],[-0.22,0.97],[-0.38,0.84],[-0.50,0.62],[-0.58,0.34],
-      [-0.61,0.04],[-0.58,-0.28],[-0.53,-0.60]
+  <script>
+    // ========== 精簡景點資料（之後可換成完整 JSON）==========
+    const spots = [
+      { name: "太魯閣國家公園", city: "花蓮縣", themes: ["自然景觀", "原住民文化"], tags: ["峽谷", "太魯閣族"], duration: 4, suitable: ["一般旅客", "健行者"], desc: "大理石峽谷與太魯閣族文化" },
+      { name: "日月潭", city: "南投縣", themes: ["自然景觀", "原住民文化"], tags: ["湖泊", "邵族"], duration: 4, suitable: ["一般旅客", "家庭"], desc: "邵族文化與湖景遊船" },
+      { name: "阿里山", city: "嘉義縣", themes: ["自然景觀", "原住民文化"], tags: ["森林", "鄒族"], duration: 5, suitable: ["一般旅客"], desc: "森林鐵道與鄒族文化" },
+      { name: "九份老街", city: "新北市", themes: ["歷史文化"], tags: ["老街", "山城"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "山城老街與懷舊氛圍" },
+      { name: "鹿港老街", city: "彰化縣", themes: ["歷史文化", "美食體驗"], tags: ["古蹟", "閩南"], duration: 3, suitable: ["一般旅客", "家庭"], desc: "傳統街巷與在地小吃" },
+      { name: "北埔老街", city: "新竹縣", themes: ["客家文化", "美食體驗"], tags: ["擂茶", "古厝"], duration: 3, suitable: ["一般旅客"], desc: "客家擂茶與老街文化" },
+      { name: "南庄", city: "苗栗縣", themes: ["客家文化", "慢活"], tags: ["桂花巷", "慢活"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "客庄慢活與桂花巷" },
+      { name: "美濃", city: "高雄市", themes: ["客家文化", "手作體驗"], tags: ["紙傘", "擂茶"], duration: 3, suitable: ["一般旅客", "家庭"], desc: "客家紙傘與農村文化" },
+      { name: "臺灣原住民族文化園區", city: "屏東縣", themes: ["原住民文化"], tags: ["園區", "表演"], duration: 4, suitable: ["家庭", "旅行社團體"], desc: "各族文化展示與表演" },
+      { name: "禮納里部落", city: "屏東縣", themes: ["原住民文化"], tags: ["部落體驗"], duration: 3, suitable: ["一般旅客"], desc: "排灣族部落文化體驗" },
+      { name: "烏來", city: "新北市", themes: ["原住民文化", "自然景觀"], tags: ["泰雅", "溫泉"], duration: 4, suitable: ["一般旅客", "情侶"], desc: "泰雅文化與溫泉" },
+      { name: "蘭嶼", city: "台東縣", themes: ["原住民文化", "自然景觀"], tags: ["達悟", "離島"], duration: 8, suitable: ["一般旅客"], desc: "達悟族文化與海洋" },
+      { name: "台東池上", city: "台東縣", themes: ["慢活", "自然景觀"], tags: ["稻田", "攝影"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "伯朗大道與稻田景觀" },
+      { name: "安平古堡", city: "台南市", themes: ["歷史文化"], tags: ["古蹟"], duration: 2, suitable: ["一般旅客", "家庭"], desc: "台灣重要歷史地標" },
+      { name: "赤崁樓", city: "台南市", themes: ["歷史文化"], tags: ["古蹟"], duration: 1.5, suitable: ["一般旅客"], desc: "台南經典歷史建築" },
+      { name: "國立故宮博物院", city: "台北市", themes: ["歷史文化"], tags: ["博物館"], duration: 3, suitable: ["一般旅客", "旅行社團體"], desc: "中華文物典藏" },
+      { name: "野柳地質公園", city: "新北市", themes: ["自然景觀"], tags: ["奇岩"], duration: 2, suitable: ["一般旅客", "家庭"], desc: "女王頭等地質景觀" },
+      { name: "墾丁", city: "屏東縣", themes: ["自然景觀"], tags: ["海灘", "度假"], duration: 6, suitable: ["一般旅客", "情侶"], desc: "南台灣海灘與度假" },
+      { name: "清境", city: "南投縣", themes: ["自然景觀"], tags: ["高地", "農場"], duration: 4, suitable: ["家庭"], desc: "高地景觀與農場" },
+      { name: "鶯歌", city: "新北市", themes: ["手作體驗", "歷史文化"], tags: ["陶瓷"], duration: 3, suitable: ["家庭", "一般旅客"], desc: "陶瓷老街與手作體驗" }
     ];
 
-    function insidePoly(x, z) {
-      let inside = false;
-      for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
-        const xi = outline[i][0], zi = outline[i][1];
-        const xj = outline[j][0], zj = outline[j][1];
-        const intersect = ((zi > z) !== (zj > z)) &&
-          (x < (xj - xi) * (z - zi) / (zj - zi) + xi);
-        if (intersect) inside = !inside;
+    // 興趣 chip 選擇
+    const chips = document.querySelectorAll('.chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => chip.classList.toggle('active'));
+    });
+
+    function getSelectedInterests() {
+      return [...document.querySelectorAll('.chip.active')].map(c => c.dataset.value);
+    }
+
+    document.getElementById('btn').addEventListener('click', async () => {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey) {
+        alert('請先填入 OpenAI API Key');
+        return;
       }
-      return inside;
-    }
 
-    // 更接近真實的高度場
-    function terrainHeight(x, z, detail = 3) {
-      // 中央山脈主脊（略偏東）
-      const ridge = Math.exp(-Math.pow((x - 0.06) / 0.22, 2));
-      // 玉山一帶
-      const yushan = 0.55 * Math.exp(-((x - 0.04) ** 2 + (z + 0.28) ** 2) / 0.028);
-      // 雪山 / 北段
-      const snow = 0.28 * Math.exp(-((x - 0.08) ** 2 + (z - 0.42) ** 2) / 0.04);
-      // 南段延續
-      const south = 0.22 * Math.exp(-((x - 0.02) ** 2 + (z + 0.55) ** 2) / 0.05);
-      // 東側較陡
-      const eastBoost = Math.max(0, (x + 0.05) * 0.45);
-      // 西側平原壓低
-      const westPlain = 0.55 + 0.45 * Math.exp(-Math.pow((x + 0.38) / 0.32, 2));
-      // 細節噪聲
-      const noise =
-        Math.sin(z * 11 + x * 3.2) * 0.06 +
-        Math.sin(z * 23 - x * 9) * 0.03 +
-        Math.cos(x * 18 + z * 6) * 0.02;
+      const interests = getSelectedInterests();
+      if (interests.length === 0) {
+        alert('請至少選擇一個興趣主題');
+        return;
+      }
 
-      let h = 0.10 + 0.95 * ridge + yushan + snow + south + eastBoost * 0.25 + noise * detail;
-      h *= westPlain;
-      return Math.max(0.05, h);
-    }
+      const days = document.getElementById('days').value;
+      const companions = document.getElementById('companions').value;
+      const region = document.getElementById('region').value;
+      const extra = document.getElementById('extra').value.trim();
 
-    let terrainGroup = new THREE.Group();
-    scene.add(terrainGroup);
-    let terrainMesh, wireMesh;
-    let heightScale = 1.4;
-    let detailLevel = 3;
+      const btn = document.getElementById('btn');
+      const result = document.getElementById('result');
+      btn.disabled = true;
+      btn.textContent = '推薦產生中…';
+      result.textContent = '正在呼叫 AI，請稍候…';
 
-    function buildTerrain() {
-      if (terrainMesh) terrainGroup.remove(terrainMesh);
-      if (wireMesh) terrainGroup.remove(wireMesh);
+      const prompt = `
+你是台灣智慧文化旅遊推薦助手，同時服務一般觀光客與旅行社規劃人員。
 
-      const N = 160;
-      const sizeX = 16;
-      const sizeZ = 32;
-      const positions = [];
-      const colors = [];
-      const indices = [];
-      const grid = [];
-      const color = new THREE.Color();
+使用者條件：
+- 興趣：${interests.join('、')}
+- 天數：${days} 天
+- 同行對象：${companions}
+- 偏好區域：${region}
+- 補充需求：${extra || '無'}
 
-      for (let iz = 0; iz <= N; iz++) {
-        const row = [];
-        const z = (iz / N - 0.5) * 2.15;
-        for (let ix = 0; ix <= N; ix++) {
-          const x = (ix / N - 0.5) * 1.28;
-          const inP = insidePoly(x, z);
-          let y = -0.4;
-          if (inP) y = terrainHeight(x, z, detailLevel) * heightScale;
+可用景點資料（JSON）：
+${JSON.stringify(spots, null, 2)}
 
-          row.push(positions.length / 3);
-          positions.push(x * sizeX, y, z * sizeZ);
+請用繁體中文輸出，格式如下：
 
-          const h = Math.max(0, y + 0.4);
-          if (!inP) color.set(0xdfe8dc);
-          else if (h < 0.35) color.set(0xa9b889);      // 平原
-          else if (h < 0.75) color.set(0x78966e);      // 丘陵
-          else if (h < 1.35) color.set(0x54775a);      // 山區
-          else color.set(0xc7b98b);                     // 高山
+【推薦景點】
+1. 景點名稱（縣市）
+   - 推薦理由：
+   - 建議停留：
+   - 適合對象：
 
-          colors.push(color.r, color.g, color.b);
+【建議遊玩順序】
+（依天數與動線安排）
+
+【旅行社包裝建議】
+- 一句話賣點：
+- 可強調的體驗：
+
+【注意事項】
+- 交通或體力提醒
+`;
+
+      try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: '你是專業的台灣文化旅遊規劃助手。' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(err);
         }
-        grid.push(row);
+
+        const data = await res.json();
+        result.textContent = data.choices[0].message.content;
+      } catch (err) {
+        result.textContent = '發生錯誤：\n' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '產生推薦';
       }
-
-      for (let iz = 0; iz < N; iz++) {
-        for (let ix = 0; ix < N; ix++) {
-          const a = grid[iz][ix], b = grid[iz][ix + 1];
-          const c = grid[iz + 1][ix], d = grid[iz + 1][ix + 1];
-          indices.push(a, c, b, b, c, d);
-        }
-      }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      geo.setIndex(indices);
-      geo.computeVertexNormals();
-
-      terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.9,
-        metalness: 0.02,
-        side: THREE.DoubleSide
-      }));
-      terrainMesh.castShadow = true;
-      terrainMesh.receiveShadow = true;
-      terrainGroup.add(terrainMesh);
-
-      wireMesh = new THREE.LineSegments(
-        new THREE.WireframeGeometry(geo),
-        new THREE.LineBasicMaterial({ color: 0x334a38, transparent: true, opacity: 0.15 })
-      );
-      wireMesh.visible = false;
-      terrainGroup.add(wireMesh);
-    }
-
-    buildTerrain();
-
-    // 海面
-    const sea = new THREE.Mesh(
-      new THREE.CircleGeometry(28, 96),
-      new THREE.MeshStandardMaterial({
-        color: 0xb9d2cf,
-        roughness: 1,
-        transparent: true,
-        opacity: 0.7
-      })
-    );
-    sea.rotation.x = -Math.PI / 2;
-    sea.position.y = -0.45;
-    scene.add(sea);
-
-    // 海岸線
-    const pts = outline.map(([x, z]) => new THREE.Vector3(x * 16, 0.05, z * 32));
-    pts.push(pts[0].clone());
-    const coast = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({ color: 0x31473a })
-    );
-    scene.add(coast);
-
-    // 景點標記（簡化版）
-    const places = [
-      { name: '玉山', x: 0.6, z: -6.5, color: 0xff8c00 },
-      { name: '台北', x: 4.5, z: 14.5, color: 0x00bcd4 },
-      { name: '阿里山', x: -1.2, z: -4.8, color: 0x8bc34a },
-      { name: '日月潭', x: 0.8, z: -2.2, color: 0x2196f3 },
-      { name: '墾丁', x: -1.5, z: -18.5, color: 0xe91e63 }
-    ];
-
-    places.forEach(p => {
-      const marker = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 12, 12),
-        new THREE.MeshStandardMaterial({ color: p.color, emissive: p.color, emissiveIntensity: 0.25 })
-      );
-      marker.position.set(p.x, 2.2, p.z);
-      terrainGroup.add(marker);
     });
-
-    // 控制
-    document.getElementById('height').addEventListener('input', e => {
-      heightScale = +e.target.value;
-      buildTerrain();
-    });
-    document.getElementById('detail').addEventListener('input', e => {
-      detailLevel = +e.target.value;
-      buildTerrain();
-    });
-    document.getElementById('toggleWire').addEventListener('click', () => {
-      wireMesh.visible = !wireMesh.visible;
-    });
-    document.getElementById('reset').addEventListener('click', () => {
-      camera.position.set(0, 28, 32);
-      controls.target.set(0, 0, 0);
-      controls.update();
-    });
-
-    addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-    });
-
-    loading.remove();
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
   </script>
 </body>
 </html>
