@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣智慧文化旅遊推薦</title>
+  <title>台灣智慧文化旅遊推薦（Groq）</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -17,15 +17,8 @@
       margin: 0 auto;
       padding: 24px 18px 40px;
     }
-    h1 {
-      font-size: 24px;
-      margin: 0 0 6px;
-    }
-    .sub {
-      color: #657064;
-      font-size: 14px;
-      margin-bottom: 22px;
-    }
+    h1 { font-size: 24px; margin: 0 0 6px; }
+    .sub { color: #657064; font-size: 14px; margin-bottom: 22px; }
     .card {
       background: #fff;
       border-radius: 16px;
@@ -47,11 +40,7 @@
       font-size: 14px;
       background: #fbfcf9;
     }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
       padding: 8px 12px;
       border-radius: 999px;
@@ -77,23 +66,16 @@
       font-size: 15px;
       cursor: pointer;
     }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     #result {
       white-space: pre-wrap;
       line-height: 1.7;
       font-size: 14.5px;
     }
-    .hint {
-      font-size: 12px;
-      color: #7a877a;
-      margin-top: 8px;
-    }
+    .hint { font-size: 12px; color: #7a877a; margin-top: 8px; }
     .api-box {
-      background: #fff8e8;
-      border: 1px solid #f0e0b0;
+      background: #eef7ff;
+      border: 1px solid #b7d6f0;
       border-radius: 12px;
       padding: 12px;
       margin-bottom: 16px;
@@ -103,12 +85,14 @@
 <body>
   <div class="container">
     <h1>🇹🇼 台灣智慧文化旅遊推薦</h1>
-    <div class="sub">服務觀光客與旅行社 · 依興趣推薦景點（OpenAI）</div>
+    <div class="sub">Groq 版 · 服務觀光客與旅行社</div>
 
     <div class="api-box">
-      <label>OpenAI API Key（只在本機使用，不會上傳到其他伺服器）</label>
-      <input id="apiKey" type="password" placeholder="sk-...">
-      <div class="hint">建議先用 gpt-4o-mini，性價比高</div>
+      <label>Groq API Key</label>
+      <input id="apiKey" type="password" placeholder="gsk_...">
+      <div class="hint">
+        免費申請：<a href="https://console.groq.com/keys" target="_blank">https://console.groq.com/keys</a>
+      </div>
     </div>
 
     <div class="card">
@@ -119,7 +103,7 @@
         <div class="chip" data-value="歷史文化">歷史文化</div>
         <div class="chip" data-value="自然景觀">自然景觀</div>
         <div class="chip" data-value="美食體驗">美食體驗</div>
-        <div class="chip" data-value="慢活 hidden">慢活</div>
+        <div class="chip" data-value="慢活">慢活</div>
         <div class="chip" data-value="手作體驗">手作體驗</div>
       </div>
 
@@ -139,7 +123,7 @@
         <option value="旅行社團體">旅行社團體</option>
       </select>
 
-      <label>偏好區域（可選）</label>
+      <label>偏好區域</label>
       <select id="region">
         <option value="不限">不限</option>
         <option value="北部">北部</option>
@@ -149,7 +133,7 @@
       </select>
 
       <label>補充需求（可選）</label>
-      <textarea id="extra" rows="2" placeholder="例如：不要太操、想要有文化體驗、方便停車…"></textarea>
+      <textarea id="extra" rows="2" placeholder="例如：不要太操、想要有文化體驗…"></textarea>
 
       <button id="btn">產生推薦</button>
     </div>
@@ -161,7 +145,6 @@
   </div>
 
   <script>
-    // ========== 精簡景點資料（之後可換成完整 JSON）==========
     const spots = [
       { name: "太魯閣國家公園", city: "花蓮縣", themes: ["自然景觀", "原住民文化"], tags: ["峽谷", "太魯閣族"], duration: 4, suitable: ["一般旅客", "健行者"], desc: "大理石峽谷與太魯閣族文化" },
       { name: "日月潭", city: "南投縣", themes: ["自然景觀", "原住民文化"], tags: ["湖泊", "邵族"], duration: 4, suitable: ["一般旅客", "家庭"], desc: "邵族文化與湖景遊船" },
@@ -185,9 +168,7 @@
       { name: "鶯歌", city: "新北市", themes: ["手作體驗", "歷史文化"], tags: ["陶瓷"], duration: 3, suitable: ["家庭", "一般旅客"], desc: "陶瓷老街與手作體驗" }
     ];
 
-    // 興趣 chip 選擇
-    const chips = document.querySelectorAll('.chip');
-    chips.forEach(chip => {
+    document.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => chip.classList.toggle('active'));
     });
 
@@ -198,7 +179,7 @@
     document.getElementById('btn').addEventListener('click', async () => {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey) {
-        alert('請先填入 OpenAI API Key');
+        alert('請先填入 Groq API Key');
         return;
       }
 
@@ -217,7 +198,7 @@
       const result = document.getElementById('result');
       btn.disabled = true;
       btn.textContent = '推薦產生中…';
-      result.textContent = '正在呼叫 AI，請稍候…';
+      result.textContent = '正在呼叫 Groq，請稍候…';
 
       const prompt = `
 你是台灣智慧文化旅遊推薦助手，同時服務一般觀光客與旅行社規劃人員。
@@ -229,7 +210,7 @@
 - 偏好區域：${region}
 - 補充需求：${extra || '無'}
 
-可用景點資料（JSON）：
+可用景點資料：
 ${JSON.stringify(spots, null, 2)}
 
 請用繁體中文輸出，格式如下：
@@ -252,16 +233,16 @@ ${JSON.stringify(spots, null, 2)}
 `;
 
       try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'llama-3.3-70b-versatile',
             messages: [
-              { role: 'system', content: '你是專業的台灣文化旅遊規劃助手。' },
+              { role: 'system', content: '你是專業的台灣文化旅遊規劃助手，請用繁體中文回答。' },
               { role: 'user', content: prompt }
             ],
             temperature: 0.7
@@ -281,6 +262,10 @@ ${JSON.stringify(spots, null, 2)}
         btn.disabled = false;
         btn.textContent = '產生推薦';
       }
+    });
+  </script>
+</body>
+</html>
     });
   </script>
 </body>
