@@ -240,7 +240,7 @@ ${JSON.stringify(spots, null, 2)}
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',
             messages: [
               { role: 'system', content: '你是專業的台灣文化旅遊規劃助手，請用繁體中文回答。' },
               { role: 'user', content: prompt }
