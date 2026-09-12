@@ -32,7 +32,7 @@
       font-weight: 600;
       margin: 12px 0 6px;
     }
-    select, textarea {
+    input, textarea {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid #cfd8cb;
@@ -40,9 +40,16 @@
       font-size: 14px;
       background: #fbfcf9;
     }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      padding: 8px 12px;
+    .cities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .city {
+      padding: 7px 11px;
       border-radius: 999px;
       border: 1px solid #b7c7b0;
       background: #f3f7f0;
@@ -50,7 +57,7 @@
       font-size: 13px;
       user-select: none;
     }
-    .chip.active {
+    .city.active {
       background: #547b58;
       color: #fff;
       border-color: #547b58;
@@ -80,49 +87,31 @@
       border-radius: 6px;
       margin-bottom: 10px;
     }
+    .hint {
+      font-size: 12px;
+      color: #7a877a;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🇹🇼 台灣智慧文化旅遊推薦</h1>
-    <div class="sub">模擬版 · 不需 API · 可直接 Demo</div>
+    <div class="sub">模擬版 · 關鍵字 / 天數輸入 / 縣市多選</div>
 
     <div class="card">
-      <label>興趣主題（可多選）</label>
-      <div class="chips">
-        <div class="chip" data-value="原住民文化">原住民文化</div>
-        <div class="chip" data-value="客家文化">客家文化</div>
-        <div class="chip" data-value="歷史文化">歷史文化</div>
-        <div class="chip" data-value="自然景觀">自然景觀</div>
-        <div class="chip" data-value="美食體驗">美食體驗</div>
-        <div class="chip" data-value="慢活">慢活</div>
-        <div class="chip" data-value="手作體驗">手作體驗</div>
-      </div>
+      <label>關鍵字（用空格分開）</label>
+      <input id="keywords" type="text" placeholder="例如：原住民 客家 老街 溫泉 美食">
+      <div class="hint">可輸入多個關鍵字，系統會依關鍵字匹配景點</div>
 
       <label>天數</label>
-      <select id="days">
-        <option value="1">1 天</option>
-        <option value="2" selected>2 天</option>
-        <option value="3">3 天</option>
-      </select>
+      <input id="days" type="number" min="1" max="7" value="2" placeholder="請輸入天數">
+
+      <label>縣市（可複選）</label>
+      <div class="cities" id="cityList"></div>
 
       <label>同行對象</label>
-      <select id="companions">
-        <option value="一般旅客">一般旅客</option>
-        <option value="情侶">情侶</option>
-        <option value="家庭（含小孩）">家庭（含小孩）</option>
-        <option value="長者">長者</option>
-        <option value="旅行社團體">旅行社團體</option>
-      </select>
-
-      <label>偏好區域</label>
-      <select id="region">
-        <option value="不限">不限</option>
-        <option value="北部">北部</option>
-        <option value="中部">中部</option>
-        <option value="南部">南部</option>
-        <option value="東部">東部</option>
-      </select>
+      <input id="companions" type="text" value="一般旅客" placeholder="例如：一般旅客、情侶、家庭、長者、旅行社團體">
 
       <label>補充需求（可選）</label>
       <textarea id="extra" rows="2" placeholder="例如：不要太操、想要有文化體驗…"></textarea>
@@ -137,62 +126,93 @@
   </div>
 
   <script>
-    const spots = [
-      { name: "太魯閣國家公園", city: "花蓮縣", region: "東部", themes: ["自然景觀", "原住民文化"], duration: "4小時", reason: "壯麗峽谷與太魯閣族文化，適合深度體驗" },
-      { name: "日月潭", city: "南投縣", region: "中部", themes: ["自然景觀", "原住民文化"], duration: "4小時", reason: "邵族文化與湖景，適合家庭與一般旅客" },
-      { name: "阿里山", city: "嘉義縣", region: "南部", themes: ["自然景觀", "原住民文化"], duration: "5小時", reason: "森林鐵道與鄒族文化" },
-      { name: "九份老街", city: "新北市", region: "北部", themes: ["歷史文化"], duration: "3小時", reason: "山城老街與懷舊氛圍，拍照與漫遊皆宜" },
-      { name: "鹿港老街", city: "彰化縣", region: "中部", themes: ["歷史文化", "美食體驗"], duration: "3小時", reason: "傳統街巷與在地小吃豐富" },
-      { name: "北埔老街", city: "新竹縣", region: "北部", themes: ["客家文化", "美食體驗"], duration: "3小時", reason: "客家擂茶與古厝文化" },
-      { name: "南庄", city: "苗栗縣", region: "北部", themes: ["客家文化", "慢活"], duration: "3小時", reason: "客庄慢活與桂花巷氛圍" },
-      { name: "美濃", city: "高雄市", region: "南部", themes: ["客家文化", "手作體驗"], duration: "3小時", reason: "客家紙傘與農村文化體驗" },
-      { name: "臺灣原住民族文化園區", city: "屏東縣", region: "南部", themes: ["原住民文化"], duration: "4小時", reason: "各族文化展示與表演，適合團體" },
-      { name: "禮納里部落", city: "屏東縣", region: "南部", themes: ["原住民文化"], duration: "3小時", reason: "排灣族部落文化體驗" },
-      { name: "烏來", city: "新北市", region: "北部", themes: ["原住民文化", "自然景觀"], duration: "4小時", reason: "泰雅文化與溫泉" },
-      { name: "台東池上", city: "台東縣", region: "東部", themes: ["慢活", "自然景觀"], duration: "3小時", reason: "伯朗大道與稻田景觀，適合慢遊" },
-      { name: "安平古堡", city: "台南市", region: "南部", themes: ["歷史文化"], duration: "2小時", reason: "台灣重要歷史地標" },
-      { name: "國立故宮博物院", city: "台北市", region: "北部", themes: ["歷史文化"], duration: "3小時", reason: "中華文物典藏，適合深度文化遊" },
-      { name: "野柳地質公園", city: "新北市", region: "北部", themes: ["自然景觀"], duration: "2小時", reason: "女王頭等地質奇景" },
-      { name: "墾丁", city: "屏東縣", region: "南部", themes: ["自然景觀"], duration: "6小時", reason: "南台灣海灘與度假氛圍" },
-      { name: "鶯歌", city: "新北市", region: "北部", themes: ["手作體驗", "歷史文化"], duration: "3小時", reason: "陶瓷老街與手作體驗" }
+    const cities = [
+      "台北市","新北市","基隆市","桃園市","新竹市","新竹縣","宜蘭縣",
+      "苗栗縣","台中市","彰化縣","南投縣","雲林縣",
+      "嘉義市","嘉義縣","台南市","高雄市","屏東縣",
+      "花蓮縣","台東縣","澎湖縣","金門縣","連江縣"
     ];
 
-    document.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => chip.classList.toggle('active'));
+    const cityList = document.getElementById('cityList');
+    cities.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'city';
+      el.textContent = c;
+      el.dataset.value = c;
+      el.addEventListener('click', () => el.classList.toggle('active'));
+      cityList.appendChild(el);
     });
 
-    function getSelectedInterests() {
-      return [...document.querySelectorAll('.chip.active')].map(c => c.dataset.value);
+    const spots = [
+      { name: "太魯閣國家公園", city: "花蓮縣", keywords: ["原住民", "自然", "峽谷", "健行", "太魯閣"], duration: "4小時", reason: "壯麗峽谷與太魯閣族文化" },
+      { name: "日月潭", city: "南投縣", keywords: ["原住民", "自然", "湖泊", "邵族", "遊船"], duration: "4小時", reason: "邵族文化與湖景遊船" },
+      { name: "阿里山", city: "嘉義縣", keywords: ["原住民", "自然", "森林", "鄒族", "鐵道"], duration: "5小時", reason: "森林鐵道與鄒族文化" },
+      { name: "九份老街", city: "新北市", keywords: ["歷史", "老街", "山城", "懷舊", "拍照"], duration: "3小時", reason: "山城老街與懷舊氛圍" },
+      { name: "鹿港老街", city: "彰化縣", keywords: ["歷史", "老街", "美食", "古蹟", "閩南"], duration: "3小時", reason: "傳統街巷與在地小吃" },
+      { name: "北埔老街", city: "新竹縣", keywords: ["客家", "老街", "美食", "擂茶", "古厝"], duration: "3小時", reason: "客家擂茶與老街文化" },
+      { name: "南庄", city: "苗栗縣", keywords: ["客家", "慢活", "桂花", "老街"], duration: "3小時", reason: "客庄慢活與桂花巷" },
+      { name: "美濃", city: "高雄市", keywords: ["客家", "手作", "紙傘", "擂茶", "農村"], duration: "3小時", reason: "客家紙傘與農村文化" },
+      { name: "臺灣原住民族文化園區", city: "屏東縣", keywords: ["原住民", "文化", "園區", "表演"], duration: "4小時", reason: "各族文化展示與表演" },
+      { name: "禮納里部落", city: "屏東縣", keywords: ["原住民", "部落", "體驗", "排灣"], duration: "3小時", reason: "排灣族部落文化體驗" },
+      { name: "烏來", city: "新北市", keywords: ["原住民", "溫泉", "泰雅", "自然"], duration: "4小時", reason: "泰雅文化與溫泉" },
+      { name: "台東池上", city: "台東縣", keywords: ["慢活", "自然", "稻田", "攝影", "伯朗"], duration: "3小時", reason: "伯朗大道與稻田景觀" },
+      { name: "安平古堡", city: "台南市", keywords: ["歷史", "古蹟", "安平"], duration: "2小時", reason: "台灣重要歷史地標" },
+      { name: "赤崁樓", city: "台南市", keywords: ["歷史", "古蹟"], duration: "1.5小時", reason: "台南經典歷史建築" },
+      { name: "國立故宮博物院", city: "台北市", keywords: ["歷史", "文化", "博物館", "文物"], duration: "3小時", reason: "中華文物典藏" },
+      { name: "野柳地質公園", city: "新北市", keywords: ["自然", "地質", "奇岩", "女王頭"], duration: "2小時", reason: "女王頭等地質景觀" },
+      { name: "墾丁", city: "屏東縣", keywords: ["自然", "海灘", "度假", "海邊"], duration: "6小時", reason: "南台灣海灘與度假" },
+      { name: "鶯歌", city: "新北市", keywords: ["手作", "陶瓷", "歷史", "老街"], duration: "3小時", reason: "陶瓷老街與手作體驗" },
+      { name: "清境", city: "南投縣", keywords: ["自然", "高地", "農場", "清境"], duration: "4小時", reason: "高地景觀與農場" },
+      { name: "蘭嶼", city: "台東縣", keywords: ["原住民", "達悟", "離島", "自然", "海洋"], duration: "1天", reason: "達悟族文化與海洋" }
+    ];
+
+    function getSelectedCities() {
+      return [...document.querySelectorAll('.city.active')].map(c => c.dataset.value);
     }
 
     function mockRecommend() {
-      const interests = getSelectedInterests();
-      const days = document.getElementById('days').value;
-      const companions = document.getElementById('companions').value;
-      const region = document.getElementById('region').value;
+      const keywordText = document.getElementById('keywords').value.trim();
+      const keywords = keywordText ? keywordText.split(/\s+/).filter(Boolean) : [];
+      const days = Math.max(1, parseInt(document.getElementById('days').value) || 2);
+      const companions = document.getElementById('companions').value.trim() || '一般旅客';
+      const selectedCities = getSelectedCities();
       const extra = document.getElementById('extra').value.trim();
 
-      if (interests.length === 0) {
-        alert('請至少選擇一個興趣主題');
+      if (keywords.length === 0) {
+        alert('請至少輸入一個關鍵字');
         return;
       }
 
-      // 篩選景點
+      // 依關鍵字與縣市篩選
       let filtered = spots.filter(s => {
-        const themeMatch = s.themes.some(t => interests.includes(t));
-        const regionMatch = region === '不限' || s.region === region;
-        return themeMatch && regionMatch;
+        const keywordMatch = keywords.some(k =>
+          s.keywords.some(sk => sk.includes(k) || k.includes(sk)) ||
+          s.name.includes(k) ||
+          s.reason.includes(k)
+        );
+        const cityMatch = selectedCities.length === 0 || selectedCities.includes(s.city);
+        return keywordMatch && cityMatch;
       });
 
+      // 若沒結果，放寬只依關鍵字
       if (filtered.length === 0) {
-        filtered = spots.filter(s => s.themes.some(t => interests.includes(t)));
+        filtered = spots.filter(s =>
+          keywords.some(k =>
+            s.keywords.some(sk => sk.includes(k) || k.includes(sk)) ||
+            s.name.includes(k)
+          )
+        );
       }
 
-      // 依天數取景點數
-      const count = days === '1' ? 3 : days === '2' ? 5 : 7;
+      const count = days === 1 ? 3 : days === 2 ? 5 : Math.min(7, days * 2);
       filtered = filtered.slice(0, count);
 
-      let text = `【推薦景點】（依您的條件模擬產生）\n\n`;
+      if (filtered.length === 0) {
+        document.getElementById('result').textContent = '找不到符合的景點，請試試其他關鍵字或縣市。';
+        return;
+      }
+
+      let text = `【推薦景點】（關鍵字：${keywords.join('、')}）\n\n`;
       filtered.forEach((s, i) => {
         text += `${i + 1}. ${s.name}（${s.city}）\n`;
         text += `   - 推薦理由：${s.reason}\n`;
@@ -200,25 +220,28 @@
         text += `   - 適合對象：${companions}\n\n`;
       });
 
-      text += `【建議遊玩順序】\n`;
-      if (days === '1') {
-        text += `上午 → ${filtered[0]?.name || ''}；下午 → ${filtered[1]?.name || ''}；傍晚 → ${filtered[2]?.name || ''}\n\n`;
-      } else if (days === '2') {
-        text += `Day1：${filtered.slice(0, 3).map(s => s.name).join(' → ')}\n`;
-        text += `Day2：${filtered.slice(3).map(s => s.name).join(' → ')}\n\n`;
+      text += `【建議遊玩順序】（共 ${days} 天）\n`;
+      if (days === 1) {
+        text += filtered.map(s => s.name).join(' → ') + '\n\n';
       } else {
-        text += `Day1：${filtered.slice(0, 3).map(s => s.name).join(' → ')}\n`;
-        text += `Day2：${filtered.slice(3, 5).map(s => s.name).join(' → ')}\n`;
-        text += `Day3：${filtered.slice(5).map(s => s.name).join(' → ')}\n\n`;
+        const perDay = Math.ceil(filtered.length / days);
+        for (let d = 0; d < days; d++) {
+          const daySpots = filtered.slice(d * perDay, (d + 1) * perDay);
+          if (daySpots.length) {
+            text += `Day${d + 1}：${daySpots.map(s => s.name).join(' → ')}\n`;
+          }
+        }
+        text += '\n';
       }
 
       text += `【旅行社包裝建議】\n`;
-      text += `- 一句話賣點：深度體驗台灣「${interests.join('、')}」的精華行程\n`;
-      text += `- 可強調的體驗：文化導覽、在地美食、適合${companions}的節奏\n\n`;
+      text += `- 一句話賣點：深度體驗「${keywords.join('、')}」主題的台灣文化行程\n`;
+      text += `- 可強調的體驗：在地文化、適合${companions}的節奏\n\n`;
 
       text += `【注意事項】\n`;
       text += `- 建議預留交通時間，山區景點請注意體力\n`;
-      if (extra) text += `- 已參考您的補充需求：${extra}\n`;
+      if (selectedCities.length) text += `- 已限定縣市：${selectedCities.join('、')}\n`;
+      if (extra) text += `- 補充需求：${extra}\n`;
       text += `- 此為模擬結果，之後可接真實 AI 提升個人化程度`;
 
       document.getElementById('result').textContent = text;
