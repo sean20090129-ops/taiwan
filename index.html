@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣智慧文化旅遊推薦（Groq）</title>
+  <title>台灣智慧文化旅遊推薦（模擬版）</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -32,7 +32,7 @@
       font-weight: 600;
       margin: 12px 0 6px;
     }
-    select, input, textarea {
+    select, textarea {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid #cfd8cb;
@@ -66,38 +66,30 @@
       font-size: 15px;
       cursor: pointer;
     }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
     #result {
       white-space: pre-wrap;
       line-height: 1.7;
       font-size: 14.5px;
     }
-    .hint { font-size: 12px; color: #7a877a; margin-top: 8px; }
-    .api-box {
-      background: #eef7ff;
-      border: 1px solid #b7d6f0;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 16px;
+    .badge {
+      display: inline-block;
+      background: #e8f0e6;
+      color: #3d5a40;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🇹🇼 台灣智慧文化旅遊推薦</h1>
-    <div class="sub">Groq 版 · 服務觀光客與旅行社</div>
-
-    <div class="api-box">
-      <label>Groq API Key</label>
-      <input id="apiKey" type="password" placeholder="gsk_...">
-      <div class="hint">
-        免費申請：<a href="https://console.groq.com/keys" target="_blank">https://console.groq.com/keys</a>
-      </div>
-    </div>
+    <div class="sub">模擬版 · 不需 API · 可直接 Demo</div>
 
     <div class="card">
       <label>興趣主題（可多選）</label>
-      <div class="chips" id="interestChips">
+      <div class="chips">
         <div class="chip" data-value="原住民文化">原住民文化</div>
         <div class="chip" data-value="客家文化">客家文化</div>
         <div class="chip" data-value="歷史文化">歷史文化</div>
@@ -139,33 +131,30 @@
     </div>
 
     <div class="card">
-      <label>推薦結果</label>
+      <div class="badge">模擬 AI 推薦結果</div>
       <div id="result">尚未產生推薦</div>
     </div>
   </div>
 
   <script>
     const spots = [
-      { name: "太魯閣國家公園", city: "花蓮縣", themes: ["自然景觀", "原住民文化"], tags: ["峽谷", "太魯閣族"], duration: 4, suitable: ["一般旅客", "健行者"], desc: "大理石峽谷與太魯閣族文化" },
-      { name: "日月潭", city: "南投縣", themes: ["自然景觀", "原住民文化"], tags: ["湖泊", "邵族"], duration: 4, suitable: ["一般旅客", "家庭"], desc: "邵族文化與湖景遊船" },
-      { name: "阿里山", city: "嘉義縣", themes: ["自然景觀", "原住民文化"], tags: ["森林", "鄒族"], duration: 5, suitable: ["一般旅客"], desc: "森林鐵道與鄒族文化" },
-      { name: "九份老街", city: "新北市", themes: ["歷史文化"], tags: ["老街", "山城"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "山城老街與懷舊氛圍" },
-      { name: "鹿港老街", city: "彰化縣", themes: ["歷史文化", "美食體驗"], tags: ["古蹟", "閩南"], duration: 3, suitable: ["一般旅客", "家庭"], desc: "傳統街巷與在地小吃" },
-      { name: "北埔老街", city: "新竹縣", themes: ["客家文化", "美食體驗"], tags: ["擂茶", "古厝"], duration: 3, suitable: ["一般旅客"], desc: "客家擂茶與老街文化" },
-      { name: "南庄", city: "苗栗縣", themes: ["客家文化", "慢活"], tags: ["桂花巷", "慢活"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "客庄慢活與桂花巷" },
-      { name: "美濃", city: "高雄市", themes: ["客家文化", "手作體驗"], tags: ["紙傘", "擂茶"], duration: 3, suitable: ["一般旅客", "家庭"], desc: "客家紙傘與農村文化" },
-      { name: "臺灣原住民族文化園區", city: "屏東縣", themes: ["原住民文化"], tags: ["園區", "表演"], duration: 4, suitable: ["家庭", "旅行社團體"], desc: "各族文化展示與表演" },
-      { name: "禮納里部落", city: "屏東縣", themes: ["原住民文化"], tags: ["部落體驗"], duration: 3, suitable: ["一般旅客"], desc: "排灣族部落文化體驗" },
-      { name: "烏來", city: "新北市", themes: ["原住民文化", "自然景觀"], tags: ["泰雅", "溫泉"], duration: 4, suitable: ["一般旅客", "情侶"], desc: "泰雅文化與溫泉" },
-      { name: "蘭嶼", city: "台東縣", themes: ["原住民文化", "自然景觀"], tags: ["達悟", "離島"], duration: 8, suitable: ["一般旅客"], desc: "達悟族文化與海洋" },
-      { name: "台東池上", city: "台東縣", themes: ["慢活", "自然景觀"], tags: ["稻田", "攝影"], duration: 3, suitable: ["一般旅客", "情侶"], desc: "伯朗大道與稻田景觀" },
-      { name: "安平古堡", city: "台南市", themes: ["歷史文化"], tags: ["古蹟"], duration: 2, suitable: ["一般旅客", "家庭"], desc: "台灣重要歷史地標" },
-      { name: "赤崁樓", city: "台南市", themes: ["歷史文化"], tags: ["古蹟"], duration: 1.5, suitable: ["一般旅客"], desc: "台南經典歷史建築" },
-      { name: "國立故宮博物院", city: "台北市", themes: ["歷史文化"], tags: ["博物館"], duration: 3, suitable: ["一般旅客", "旅行社團體"], desc: "中華文物典藏" },
-      { name: "野柳地質公園", city: "新北市", themes: ["自然景觀"], tags: ["奇岩"], duration: 2, suitable: ["一般旅客", "家庭"], desc: "女王頭等地質景觀" },
-      { name: "墾丁", city: "屏東縣", themes: ["自然景觀"], tags: ["海灘", "度假"], duration: 6, suitable: ["一般旅客", "情侶"], desc: "南台灣海灘與度假" },
-      { name: "清境", city: "南投縣", themes: ["自然景觀"], tags: ["高地", "農場"], duration: 4, suitable: ["家庭"], desc: "高地景觀與農場" },
-      { name: "鶯歌", city: "新北市", themes: ["手作體驗", "歷史文化"], tags: ["陶瓷"], duration: 3, suitable: ["家庭", "一般旅客"], desc: "陶瓷老街與手作體驗" }
+      { name: "太魯閣國家公園", city: "花蓮縣", region: "東部", themes: ["自然景觀", "原住民文化"], duration: "4小時", reason: "壯麗峽谷與太魯閣族文化，適合深度體驗" },
+      { name: "日月潭", city: "南投縣", region: "中部", themes: ["自然景觀", "原住民文化"], duration: "4小時", reason: "邵族文化與湖景，適合家庭與一般旅客" },
+      { name: "阿里山", city: "嘉義縣", region: "南部", themes: ["自然景觀", "原住民文化"], duration: "5小時", reason: "森林鐵道與鄒族文化" },
+      { name: "九份老街", city: "新北市", region: "北部", themes: ["歷史文化"], duration: "3小時", reason: "山城老街與懷舊氛圍，拍照與漫遊皆宜" },
+      { name: "鹿港老街", city: "彰化縣", region: "中部", themes: ["歷史文化", "美食體驗"], duration: "3小時", reason: "傳統街巷與在地小吃豐富" },
+      { name: "北埔老街", city: "新竹縣", region: "北部", themes: ["客家文化", "美食體驗"], duration: "3小時", reason: "客家擂茶與古厝文化" },
+      { name: "南庄", city: "苗栗縣", region: "北部", themes: ["客家文化", "慢活"], duration: "3小時", reason: "客庄慢活與桂花巷氛圍" },
+      { name: "美濃", city: "高雄市", region: "南部", themes: ["客家文化", "手作體驗"], duration: "3小時", reason: "客家紙傘與農村文化體驗" },
+      { name: "臺灣原住民族文化園區", city: "屏東縣", region: "南部", themes: ["原住民文化"], duration: "4小時", reason: "各族文化展示與表演，適合團體" },
+      { name: "禮納里部落", city: "屏東縣", region: "南部", themes: ["原住民文化"], duration: "3小時", reason: "排灣族部落文化體驗" },
+      { name: "烏來", city: "新北市", region: "北部", themes: ["原住民文化", "自然景觀"], duration: "4小時", reason: "泰雅文化與溫泉" },
+      { name: "台東池上", city: "台東縣", region: "東部", themes: ["慢活", "自然景觀"], duration: "3小時", reason: "伯朗大道與稻田景觀，適合慢遊" },
+      { name: "安平古堡", city: "台南市", region: "南部", themes: ["歷史文化"], duration: "2小時", reason: "台灣重要歷史地標" },
+      { name: "國立故宮博物院", city: "台北市", region: "北部", themes: ["歷史文化"], duration: "3小時", reason: "中華文物典藏，適合深度文化遊" },
+      { name: "野柳地質公園", city: "新北市", region: "北部", themes: ["自然景觀"], duration: "2小時", reason: "女王頭等地質奇景" },
+      { name: "墾丁", city: "屏東縣", region: "南部", themes: ["自然景觀"], duration: "6小時", reason: "南台灣海灘與度假氛圍" },
+      { name: "鶯歌", city: "新北市", region: "北部", themes: ["手作體驗", "歷史文化"], duration: "3小時", reason: "陶瓷老街與手作體驗" }
     ];
 
     document.querySelectorAll('.chip').forEach(chip => {
@@ -176,97 +165,66 @@
       return [...document.querySelectorAll('.chip.active')].map(c => c.dataset.value);
     }
 
-    document.getElementById('btn').addEventListener('click', async () => {
-      const apiKey = document.getElementById('apiKey').value.trim();
-      if (!apiKey) {
-        alert('請先填入 Groq API Key');
-        return;
-      }
-
+    function mockRecommend() {
       const interests = getSelectedInterests();
-      if (interests.length === 0) {
-        alert('請至少選擇一個興趣主題');
-        return;
-      }
-
       const days = document.getElementById('days').value;
       const companions = document.getElementById('companions').value;
       const region = document.getElementById('region').value;
       const extra = document.getElementById('extra').value.trim();
 
-      const btn = document.getElementById('btn');
-      const result = document.getElementById('result');
-      btn.disabled = true;
-      btn.textContent = '推薦產生中…';
-      result.textContent = '正在呼叫 Groq，請稍候…';
-
-      const prompt = `
-你是台灣智慧文化旅遊推薦助手，同時服務一般觀光客與旅行社規劃人員。
-
-使用者條件：
-- 興趣：${interests.join('、')}
-- 天數：${days} 天
-- 同行對象：${companions}
-- 偏好區域：${region}
-- 補充需求：${extra || '無'}
-
-可用景點資料：
-${JSON.stringify(spots, null, 2)}
-
-請用繁體中文輸出，格式如下：
-
-【推薦景點】
-1. 景點名稱（縣市）
-   - 推薦理由：
-   - 建議停留：
-   - 適合對象：
-
-【建議遊玩順序】
-（依天數與動線安排）
-
-【旅行社包裝建議】
-- 一句話賣點：
-- 可強調的體驗：
-
-【注意事項】
-- 交通或體力提醒
-`;
-
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
-            messages: [
-              { role: 'system', content: '你是專業的台灣文化旅遊規劃助手，請用繁體中文回答。' },
-              { role: 'user', content: prompt }
-            ],
-            temperature: 0.7
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.text();
-          throw new Error(err);
-        }
-
-        const data = await res.json();
-        result.textContent = data.choices[0].message.content;
-      } catch (err) {
-        result.textContent = '發生錯誤：\n' + err.message;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '產生推薦';
+      if (interests.length === 0) {
+        alert('請至少選擇一個興趣主題');
+        return;
       }
-    });
-  </script>
-</body>
-</html>
-    });
+
+      // 篩選景點
+      let filtered = spots.filter(s => {
+        const themeMatch = s.themes.some(t => interests.includes(t));
+        const regionMatch = region === '不限' || s.region === region;
+        return themeMatch && regionMatch;
+      });
+
+      if (filtered.length === 0) {
+        filtered = spots.filter(s => s.themes.some(t => interests.includes(t)));
+      }
+
+      // 依天數取景點數
+      const count = days === '1' ? 3 : days === '2' ? 5 : 7;
+      filtered = filtered.slice(0, count);
+
+      let text = `【推薦景點】（依您的條件模擬產生）\n\n`;
+      filtered.forEach((s, i) => {
+        text += `${i + 1}. ${s.name}（${s.city}）\n`;
+        text += `   - 推薦理由：${s.reason}\n`;
+        text += `   - 建議停留：${s.duration}\n`;
+        text += `   - 適合對象：${companions}\n\n`;
+      });
+
+      text += `【建議遊玩順序】\n`;
+      if (days === '1') {
+        text += `上午 → ${filtered[0]?.name || ''}；下午 → ${filtered[1]?.name || ''}；傍晚 → ${filtered[2]?.name || ''}\n\n`;
+      } else if (days === '2') {
+        text += `Day1：${filtered.slice(0, 3).map(s => s.name).join(' → ')}\n`;
+        text += `Day2：${filtered.slice(3).map(s => s.name).join(' → ')}\n\n`;
+      } else {
+        text += `Day1：${filtered.slice(0, 3).map(s => s.name).join(' → ')}\n`;
+        text += `Day2：${filtered.slice(3, 5).map(s => s.name).join(' → ')}\n`;
+        text += `Day3：${filtered.slice(5).map(s => s.name).join(' → ')}\n\n`;
+      }
+
+      text += `【旅行社包裝建議】\n`;
+      text += `- 一句話賣點：深度體驗台灣「${interests.join('、')}」的精華行程\n`;
+      text += `- 可強調的體驗：文化導覽、在地美食、適合${companions}的節奏\n\n`;
+
+      text += `【注意事項】\n`;
+      text += `- 建議預留交通時間，山區景點請注意體力\n`;
+      if (extra) text += `- 已參考您的補充需求：${extra}\n`;
+      text += `- 此為模擬結果，之後可接真實 AI 提升個人化程度`;
+
+      document.getElementById('result').textContent = text;
+    }
+
+    document.getElementById('btn').addEventListener('click', mockRecommend);
   </script>
 </body>
 </html>
